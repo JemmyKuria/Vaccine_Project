@@ -3,31 +3,31 @@ import streamlit as st
 import pandas as pd
 from pipeline import preprocess
 
-st.set_page_config(page_title="Pre-processing", page_icon="🧹")
+st.set_page_config(page_title="Pre-processing")
 st.title("Data Cleaning & Pre-processing Report")
 
-if "raw_df" not in st.session_state:
+if "results_df" not in st.session_state:
     st.warning("Please upload a file on the Home page first.")
     st.stop()
 
-df_raw = st.session_state["raw_df"]
+df_raw = st.session_state["results_df"]
 
-# -------------------------------------------------
+
 # 1. Missing-value summary BEFORE
-# -------------------------------------------------
+
 st.subheader("1. Missing values BEFORE cleaning")
 before = df_raw.isnull().sum()
 before = before[before > 0].sort_values(ascending=False)
 st.dataframe(before.rename("Missing Count"))
 
-# -------------------------------------------------
+
 # 2. Clean
-# -------------------------------------------------
+
 df_clean = preprocess(df_raw.copy())
 
-# -------------------------------------------------
+
 # 3. Missing values AFTER
-# -------------------------------------------------
+
 st.subheader("2. Missing values AFTER cleaning")
 after = df_clean.isnull().sum()
 after = after[after > 0].sort_values(ascending=False)
@@ -36,9 +36,8 @@ if after.empty:
 else:
     st.dataframe(after.rename("Missing Count"))
 
-# -------------------------------------------------
+
 # 4. New / engineered columns
-# -------------------------------------------------
 st.subheader("3. New / engineered columns")
 explain = {
     "household_size": "Total people in household (adults + children)",
@@ -51,9 +50,14 @@ explain = {
 }
 st.table(pd.Series(explain, name="Description"))
 
-# -------------------------------------------------
+
+st.subheader("4. Cleaned Data Preview")
+st.write("Preview (first 5 rows):")
+st.dataframe(df_clean.head())
+
+
 # 5. Download cleaned file
-# -------------------------------------------------
+
 csv = df_clean.to_csv(index=False)
 st.download_button(
     label="Download cleaned CSV",
@@ -62,8 +66,8 @@ st.download_button(
     mime="text/csv"
 )
 
-# -------------------------------------------------
+
 # 6. Continue button
-# -------------------------------------------------
+
 if st.button("Go to Predictions"):
-    st.switch_page("pages/04_Predictions.py")
+    st.switch_page("pages/Predictions.py")

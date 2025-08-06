@@ -1,91 +1,72 @@
-# pages/04_Predictions.py
 import streamlit as st
 import pandas as pd
-import numpy as np
-import joblib
-import seaborn as sns
-import matplotlib.pyplot as plt
-from pipeline import preprocess  # already handles cleaning & column order
+import plotly.express as px
+import plotly.graph_objects as go
 
-st.set_page_config(page_title="Predictions", page_icon="🤖")
-st.title("Prediction Results")
+st.set_page_config(page_title="Predictions", layout="wide")
+st.title("Vaccination Prediction Dashboard")
 
-# -------------------------------------------------
-# 1. Sanity check
-# -------------------------------------------------
-if "raw_df" not in st.session_state:
-    st.warning("Please upload a file on the Home page first.")
+# 1. Data Loading
+
+if "results_df" not in st.session_state:
+    st.warning("Please process data on the Home page first.")
     st.stop()
 
-# -------------------------------------------------
-# 2. Load model (cached so it runs once)
-# -------------------------------------------------
-@st.cache_resource
-def load_model():
-    return joblib.load("multi_tuned_rf.pkl")
+results = st.session_state["results_df"]
 
-model = load_model()
-
-# -------------------------------------------------
-# 3. Clean & predict
-# -------------------------------------------------
-df_raw   = st.session_state["raw_df"]
-df_clean = preprocess(df_raw.copy())
-proba    = model.predict_proba(df_clean)          # list of two 2-D arrays
-h1n1_prob      = proba[0][:, 1]
-seasonal_prob  = proba[1][:, 1]
-
-# -------------------------------------------------
-# 4. Build results DataFrame
-# -------------------------------------------------
-results = df_raw.copy()
-results["h1n1_prob"]     = h1n1_prob
-results["seasonal_prob"] = seasonal_prob
-results["h1n1_label"]    = (h1n1_prob >= 0.5).astype(int)
-results["seasonal_label"]= (seasonal_prob >= 0.5).astype(int)
-
-# -------------------------------------------------
-# 5. KPI cards
-# -------------------------------------------------
-total_rows = len(results)
-h1_high_risk = (results["h1n1_label"] == 0).sum()
-seas_high_risk = (results["seasonal_label"] == 0).sum()
+# 2. Key Metrics Dashboard
 
 col1, col2, col3 = st.columns(3)
-col1.metric("Total rows processed", f"{total_rows:,}")
-col2.metric("High-risk (H1N1)", f"{h1_high_risk:,}")
-col3.metric("High-risk (Seasonal)", f"{seas_high_risk:,}")
+col1.metric("Total Respondents", f"{len(results):,}")
+col2.metric("H1N1 Vaccine Non Takers",
+           f"{(results['h1n1_label'] == 0).sum():,}",
+           help="Number of respondents predicted not to get the H1N1 vaccine")
+col3.metric("Seasonal Vaccine Non Takers",
+           f"{(results['seasonal_label'] == 0).sum():,}",
+           help="Number of respondents predicted not to get the seasonal vaccine")
 
-# -------------------------------------------------
-# 6. Bar chart
-# -------------------------------------------------
-counts = pd.DataFrame({
-    "H1N1": [results["h1n1_label"].sum(), total_rows-results["h1n1_label"].sum()],
-    "Seasonal": [results["seasonal_label"].sum(), total_rows-results["seasonal_label"].sum()]
-}, index=["Vaccinated", "Un-vaccinated"])
+# 3. Demographic Breakdown
 
-fig_bar, ax_bar = plt.subplots(figsize=(6,3))
-counts.plot(kind="bar", ax=ax_bar)
-ax_bar.set_title("Predicted uptake")
-ax_bar.set_ylabel("Count")
-st.pyplot(fig_bar)
+st.subheader("Demographic Analysis")
 
-# -------------------------------------------------
-# 7. Pie charts
-# -------------------------------------------------
-fig_pie, axes = plt.subplots(1, 2, figsize=(8,3))
-axes[0].pie(counts["H1N1"], labels=counts.index, autopct='%1.1f%%')
-axes[0].set_title("H1N1")
-axes[1].pie(counts["Seasonal"], labels=counts.index, autopct='%1.1f%%')
-axes[1].set_title("Seasonal")
-st.pyplot(fig_pie)
+# Get categorical columns
+categorical_cols = results.select_dtypes(include=['object', 'category']).columns.tolist()
+target_cols = ['h1n1_label', 'seasonal_label']
 
-# -------------------------------------------------
-# 8. Download CSV
-# -------------------------------------------------
+
+# Demographic selector
+demo_col = st.selectbox(
+    "Select demographic factor:",
+    options=categorical_cols,
+    index=categorical_cols.index('age_group') if 'age_group' in categorical_cols else 0
+)
+
+# Create visualization
+demo_data = results.groupby(demo_col)[target_cols].apply(lambda x: (x == 0).sum()).reset_index()
+
+fig = px.bar(
+    demo_data,
+    x=demo_col,
+    y=target_cols,
+    title=f"Count of Respondents Not Likely to Get Vaccine by {demo_col.replace('_', ' ').title()}",
+    labels={'value': 'Count', 'variable': 'Vaccine'},
+    barmode='group',
+    color_discrete_sequence=['#636EFA', '#EF553B']  # Blue for H1N1, Red for Seasonal
+)
+
+fig.update_layout(
+    yaxis_tickformat=',',
+    hovermode="x unified"
+)
+
+st.plotly_chart(fig, use_container_width=True)
+
+# 4. Data Export
+
+st.subheader("Data Export")
 csv = results.to_csv(index=False)
 st.download_button(
-    label="Download predictions CSV",
+    label="Download Predictions (CSV)",
     data=csv,
     file_name="vaccine_predictions.csv",
     mime="text/csv"

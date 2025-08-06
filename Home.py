@@ -1,7 +1,7 @@
 # 01_Home.py
 import streamlit as st
 import pandas as pd
-from pipeline import preprocess, predict
+from pipeline import preprocess, predict  # Modified to return labels directly
 
 st.set_page_config(page_title="Home", page_icon="🏠")
 st.title("Public-Health Vaccine Dashboard")
@@ -18,28 +18,30 @@ st.write("Raw preview (first 5 rows):")
 st.dataframe(df_raw.head())
 
 # -------------------------------------------------
-# 2. Two buttons
+# 2. Process and Predict (Labels Only)
 # -------------------------------------------------
-col_a, col_b = st.columns(2)
-
-if col_a.button("Continue"):
+if st.button("Process Data and Predict"):
+    # Clean and predict labels directly
     df_clean = preprocess(df_raw.copy())
-    st.session_state["df_clean"] = df_clean
-    st.success("Data cleaned and stored.")
-
-
-    h1n1_prob, seasonal_prob = predict(st.session_state["df_clean"])
-    st.session_state["raw_df"]        = df_raw
-    st.session_state["h1n1_prob"]     = h1n1_prob
-    st.session_state["seasonal_prob"] = seasonal_prob
-
-    total = len(df_raw)
-    h1_unvax_pct  = (h1n1_prob < 0.5).mean() * 100
-    seas_unvax_pct = (seasonal_prob < 0.5).mean() * 100
+    h1n1_label, seasonal_label = predict(df_clean)  # Returns 0/1 labels
+    
+    # Create final results dataframe
+    results = df_raw.copy()
+    results["h1n1_label"] = h1n1_label
+    results["seasonal_label"] = seasonal_label
+    
+    # Store in session state
+    st.session_state["results_df"] = results
+    st.success("Predictions ready! Visit other pages to explore results.")
+    
+    # Display summary metrics
+    total = len(results)
+    h1_vax_pct = results["h1n1_label"].mean() * 100
+    seas_vax_pct = results["seasonal_label"].mean() * 100
 
     col1, col2, col3 = st.columns(3)
-    col1.metric("Total rows", f"{total:,}")
-    col2.metric("H1N1 un-vaccinated", f"{h1_unvax_pct:.1f} %")
-    col3.metric("Seasonal un-vaccinated", f"{seas_unvax_pct:.1f} %")
+    col1.metric("Total respondents", f"{total:,}")
+    col2.metric("H1N1 vaccination likely", f"{h1_vax_pct:.1f}%")
+    col3.metric("Seasonal vaccination likely", f"{seas_vax_pct:.1f}%")
 
-    st.success("Predictions ready! Visit Explore or Recommendation pages.")
+    st.success("Predictions ready!")
