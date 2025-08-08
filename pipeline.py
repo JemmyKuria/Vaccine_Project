@@ -3,6 +3,16 @@ import pandas as pd
 import joblib
 from sklearn.preprocessing import OneHotEncoder
 
+
+import os
+import gdown
+
+# Only download if the file isn't already there
+if not os.path.exists("multi_tuned_rf.pkl"):
+    print("Downloading model from Google Drive...")
+    gdown.download("https://drive.google.com/file/d/1Kw0k7CTZNNOypwYuyjvF02WDOWs7U2I4/view?usp=drive_link", "multi_tuned_rf.pkl", quiet=False)
+
+
 # paths
 MODEL_PATH = "multi_tuned_rf.pkl" 
 
