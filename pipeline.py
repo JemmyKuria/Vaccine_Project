@@ -11,7 +11,7 @@ import pickle
 
 MODEL_PATH = "multi_tuned_rf.pkl"
 FILE_ID= "1Kw0k7CTZNNOypwYuyjvF02WDOWs7U2I4"
-DOWNLOAD_URL = f"https://drive.google.com/uc?id={file_id}"
+DOWNLOAD_URL = f"https://drive.google.com/uc?id={FILE_ID}"
 
 
 # Only download if missing
