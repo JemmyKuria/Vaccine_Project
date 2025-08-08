@@ -6,19 +6,34 @@ from sklearn.preprocessing import OneHotEncoder
 
 import os
 import gdown
+import pickle
 
-# Only download if the file isn't already there
-if not os.path.exists("multi_tuned_rf.pkl"):
+
+MODEL_PATH = "multi_tuned_rf.pkl"
+DOWNLOAD_URL = f"https://drive.google.com/file/d/1Kw0k7CTZNNOypwYuyjvF02WDOWs7U2I4/view?usp=drive_link"
+
+
+# Only download if missing
+if not os.path.exists(MODEL_PATH):
     print("Downloading model from Google Drive...")
-    gdown.download("https://drive.google.com/file/d/1Kw0k7CTZNNOypwYuyjvF02WDOWs7U2I4/view?usp=drive_link", "multi_tuned_rf.pkl", quiet=False)
+    gdown.download(DOWNLOAD_URL, MODEL_PATH, quiet=False)
 
+# Check file size
+print("Downloaded file size:", os.path.getsize(MODEL_PATH), "bytes")
 
-# paths
-MODEL_PATH = "multi_tuned_rf.pkl" 
-
-# load once
-model = joblib.load(MODEL_PATH)
-print("Model loaded:", model)
+# Try loading with joblib first, then fallback to pickle
+try:
+    model = joblib.load(MODEL_PATH)
+    print("Model loaded using joblib.")
+except Exception as e:
+    print("joblib failed, trying pickle. Error was:", e)
+    try:
+        with open(MODEL_PATH, "rb") as f:
+            model = pickle.load(f)
+        print("Model loaded using pickle.")
+    except Exception as e:
+        print("pickle also failed. Error:", e)
+        raise e
 
 EXPECTED_COLS = [
     'h1n1_concern','h1n1_knowledge','behavioral_antiviral_meds',
