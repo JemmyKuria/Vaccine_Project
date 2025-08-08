@@ -1,14 +1,15 @@
 # 01_Home.py
 import streamlit as st
 import pandas as pd
-from pipeline import preprocess, predict  # Modified to return labels directly
+from pipeline import preprocess, predict 
+
 
 st.set_page_config(page_title="Home", page_icon="🏠")
-st.title("Public-Health Vaccine Dashboard")
+st.title("Public-Health Vaccine Predictor")
 
-# -------------------------------------------------
+
 # 1. File uploader
-# -------------------------------------------------
+
 uploaded = st.file_uploader("Upload survey CSV file", type=["csv"])
 if uploaded is None:
     st.stop()
@@ -17,9 +18,9 @@ df_raw = pd.read_csv(uploaded)
 st.write("Raw preview (first 5 rows):")
 st.dataframe(df_raw.head())
 
-# -------------------------------------------------
-# 2. Process and Predict (Labels Only)
-# -------------------------------------------------
+
+# 2. Process and Predict 
+
 if st.button("Process Data and Predict"):
     # Clean and predict labels directly
     df_clean = preprocess(df_raw.copy())
@@ -44,4 +45,4 @@ if st.button("Process Data and Predict"):
     col2.metric("H1N1 vaccination likely", f"{h1_vax_pct:.1f}%")
     col3.metric("Seasonal vaccination likely", f"{seas_vax_pct:.1f}%")
 
-    st.success("Predictions ready!")
+   

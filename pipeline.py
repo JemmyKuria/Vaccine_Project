@@ -91,3 +91,6 @@ def predict(df_processed: pd.DataFrame):
     h1n1_label    = pd.Series(labels[:, 0], index=df_processed.index)
     seasonal_label= pd.Series(labels[:, 1], index=df_processed.index)
     return h1n1_label, seasonal_label
+
+
+    
