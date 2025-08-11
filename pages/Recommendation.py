@@ -377,50 +377,75 @@ class Dashboard:
                 if vaccine_type in ["Seasonal", "Both"]:
                     s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
 
-                # Show 3 fake contacts
-                contacts = []
-                for _ in range(3):
-                    name = fake.first_name()
-                    phone = fake.phone_number()
-                    contacts.append({
-                        'name': name,
-                        'phone': phone,
-                        'h1n1_msg': h1_msg.format(name=name) if "{name}" in h1_msg else h1_msg,
-                        'seasonal_msg': s_msg.format(name=name) if "{name}" in s_msg else s_msg
-                    })
-                st.table(pd.DataFrame(contacts))
+               # Show 3 sample contacts from your own data
+                sample_contacts = df[['name', 'phone_number']].head(3).copy()
 
-                # Add to send list
-                for _ in range(min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))):
-                    name = fake.first_name()
-                    phone = fake.phone_number()
+                # Add personalized messages
+                sample_contacts['h1n1_msg'] = sample_contacts['name'].apply(
+                    lambda n: h1_msg.format(name=n) if "{name}" in h1_msg else h1_msg
+                )
+                sample_contacts['seasonal_msg'] = sample_contacts['name'].apply(
+                    lambda n: s_msg.format(name=n) if "{name}" in s_msg else s_msg
+                )
+
+                st.table(sample_contacts)
+
+                # Add to send list (up to 10 messages based on numeric_value)
+                messages_to_send = []
+                for _, row in df[['name', 'phone_number']].head(
+                        min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
+                    ).iterrows():
+                    
                     if vaccine_type == "H1N1":
-                        msg_text = h1_msg.format(name=name)
+                        msg_text = h1_msg.format(name=row['name'])
                     elif vaccine_type == "Seasonal":
-                        msg_text = s_msg.format(name=name)
+                        msg_text = s_msg.format(name=row['name'])
                     else:
-                        msg_text = f"{h1_msg.format(name=name)}\n\n{s_msg.format(name=name)}"
-                    messages_to_send.append({'to': phone, 'name': name, 'text': msg_text})
+                        msg_text = (
+                            f"{h1_msg.format(name=row['name'])}\n\n{s_msg.format(name=row['name'])}"
+                        )
 
-        # Send messages button
+                    messages_to_send.append({
+                        'to': row['phone_number'],  # Your own phone number column
+                        'name': row['name'],
+                        'text': msg_text
+                    })
+
+
+import streamlit as st
+import africastalking
+
+# Initialize Africa's Talking
+username = st.secrets["africastalking"]["Vaccine"]   # e.g. "sandbox"
+api_key = st.secrets["africastalking"]["atsk_5e057c7ccddb937720fdfe14339c2ae72406709be0a9bed817ba7f0c1bafb9fdef368ef5"]     # from your dashboard
+
+africastalking.initialize(username, api_key)
+sms = africastalking.SMS
+
+# Send messages button
         if st.button("📤 Send All Messages"):
             if not messages_to_send:
                 st.warning("No messages prepared to send.")
             else:
-                sid = st.secrets["twilio"]["account_sid"]
-                token = st.secrets["twilio"]["auth_token"]
-                from_number = st.secrets["twilio"]["from_number"]
-
-                client = Client(sid, token)
                 sent, failed = 0, 0
                 for m in messages_to_send:
                     try:
-                        client.messages.create(body=m['text'], from_=from_number, to=m['to'])
-                        sent += 1
-                    except:
+                        response = sms.send(
+                            message=m['text'],
+                            recipients=[m['to']],   # must be in international format, e.g. +2547...
+                            sender_id=st.secrets["africastalking"]["sender_id"]  # optional
+                        )
+                        # Check if message status is "Success"
+                        if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
+                            sent += 1
+                        else:
+                            failed += 1
+                    except Exception as e:
                         failed += 1
+                        st.error(f"Error sending to {m['to']}: {e}")
 
                 st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
+
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
