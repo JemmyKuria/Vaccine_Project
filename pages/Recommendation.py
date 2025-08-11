@@ -193,8 +193,17 @@ class VaccineAnalyzer:
             seen_profiles.add(profile)
 
             primary = profile.split(' + ')[0] if profile != "No Major Barrier" else "No Major Barrier"
+            
+
+            # Ensure primary barrier safely maps to our dictionary
+            if profile and profile != "No Major Barrier":
+                primary = profile.split(' + ')[0]
+            else:
+                primary = "No Major Barrier"
+
             if primary not in barrier_messages:
                 primary = "No Major Barrier"
+
 
             samples = []
             sample_rows = df_target[df_target['barrier_profile'] == profile].head(5)
