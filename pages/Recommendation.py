@@ -463,10 +463,19 @@ class Dashboard:
                                     recipients=[m['to']],
                                     sender_id=sender_id
                                 )
-                                if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
-                                    sent += 1
+                                if 'SMSMessageData' in response and 'Recipients' in response['SMSMessageData']:
+                                    recipients = response['SMSMessageData']['Recipients']
+                                    if recipients and 'status' in recipients[0]:
+                                        if recipients[0]['status'] == "Success":
+                                            sent += 1
+                                        else:
+                                            failed += 1
+                                    else:
+                                        failed += 1
+                                        st.error(f"Error sending to {m['to']}: No recipient data in response.")
                                 else:
                                     failed += 1
+                                    st.error(f"Error sending to {m['to']}: Invalid response structure.")
                             except Exception as e:
                                 failed += 1
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
