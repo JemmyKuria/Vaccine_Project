@@ -347,8 +347,14 @@ class Dashboard:
             st.info("No medical leverage points found.")
 
     @staticmethod
+    @staticmethod
     def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
+
+        # Check if required columns exist
+        if 'name' not in df.columns or 'phone_number' not in df.columns:
+            st.error("Error: DataFrame must contain 'name' and 'phone_number' columns")
+            return
 
         barrier_recs = recommendations.get("Barrier Messages", {})
         if not barrier_recs:
@@ -356,147 +362,110 @@ class Dashboard:
             return
 
         # Vaccine type selector
-        vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal", "Both"], horizontal=True, index=2)
+        vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal", "Both"], 
+                            horizontal=True, index=2)
 
-        st.subheader("Message Templates (editable)")
-        
         for idx, (key, details) in enumerate(barrier_recs.items()):
             with st.expander(f"Barrier {idx+1}: {details.get('insight', '')}"):
-                barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
-                st.markdown(f"**People affected (approx)**: {details.get('numeric_value', 0)}")
-
-                # Extract original messages
-                action_text = details.get('action', '')
-                h1_msg, s_msg = "", ""
-                if "H1N1:" in action_text and "Seasonal:" in action_text:
-                    try:
-                        h1_msg = action_text.split("H1N1: ")[1].split("\n\nSeasonal: ")[0].strip()
-                        s_msg = action_text.split("\n\nSeasonal: ")[1].strip()
-                    except:
-                        h1_msg = action_text
-                        s_msg = action_text
-                else:
-                    h1_msg = s_msg = action_text
-
+                # Message templates
+                h1n1_template = details.get('h1n1_message', '')
+                seasonal_template = details.get('seasonal_message', '')
+                
                 # Editable message fields
                 if vaccine_type in ["H1N1", "Both"]:
-                    h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
+                    h1n1_msg = st.text_area(f"H1N1 message:", h1n1_template, 
+                                        key=f"h1n1_{idx}")
                 if vaccine_type in ["Seasonal", "Both"]:
-                    s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
+                    seasonal_msg = st.text_area(f"Seasonal message:", seasonal_template, 
+                                            key=f"seasonal_{idx}")
 
-                # Prepare messages to send
-                messages_to_send = []
-                if 'name' in df.columns and 'phone_number' in df.columns:
-                    num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
-                    contacts_to_send = df[['name', 'phone_number']].head(num_messages)
-                    
-                    for _, row in contacts_to_send.iterrows():
-                        # Determine message text based on vaccine type
-                        if vaccine_type == "H1N1":
-                            msg_text = h1_msg.format(name=row['name']) if "{name}" in h1_msg else h1_msg
-                        elif vaccine_type == "Seasonal":
-                            msg_text = s_msg.format(name=row['name']) if "{name}" in s_msg else s_msg
-                        else:  # Both
-                            h1_text = h1_msg.format(name=row['name']) if "{name}" in h1_msg else h1_msg
-                            s_text = s_msg.format(name=row['name']) if "{name}" in s_msg else s_msg
-                            msg_text = f"{h1_text}\n\n{s_text}"
+                # Prepare messages
+                messages = []
+                contacts = df[['name', 'phone_number']].head(3)  # Sample first 3 contacts
+                
+                for _, row in contacts.iterrows():
+                    try:
+                        # Format phone number
+                        phone = str(row['phone_number']).strip()
+                        if phone.startswith('0') and len(phone) == 10:  # 0721809889 → 254721809889
+                            phone = f"254{phone[1:]}"
+                        elif len(phone) == 9:  # 721809889 → 254721809889
+                            phone = f"254{phone}"
                         
-                        messages_to_send.append({
-                            'to': row['phone_number'],
-                            'name': row['name'],
-                            'text': msg_text
+                        # Skip if invalid format
+                        if not (len(phone) == 12 and phone.startswith('254') and phone[3] in ['1', '7']):
+                            continue
+                            
+                        # Prepare message content
+                        if vaccine_type == "H1N1":
+                            msg = h1n1_msg.format(name=row['name'])
+                        elif vaccine_type == "Seasonal":
+                            msg = seasonal_msg.format(name=row['name'])
+                        else:  # Both
+                            msg = f"{h1n1_msg.format(name=row['name'])}\n\n{seasonal_msg.format(name=row['name'])}"
+                        
+                        messages.append({
+                            'phone': phone,
+                            'message': msg
                         })
+                    except Exception as e:
+                        st.error(f"Error preparing message for {row['name']}: {str(e)}")
+                        continue
 
                 # Display sample messages
-                if messages_to_send:
-                    st.markdown("**Sample Messages:**")
-                    sample_df = pd.DataFrame(messages_to_send[:3])  # Show first 3
-                    st.dataframe(sample_df)
+                if messages:
+                    st.subheader("Sample Messages")
+                    for i, msg in enumerate(messages[:3]):  # Show max 3 samples
+                        st.markdown(f"**{i+1}. To:** +{msg['phone']}")
+                        st.text(msg['message'])
+                        st.markdown("---")
                 else:
-                    st.warning("No valid contacts found with 'name' and 'phone_number' columns")
+                    st.warning("No valid phone numbers found in the first 3 contacts")
 
                 # Send messages button
-                if st.button(f"📤 Send Messages for {key}", key=f"send_{idx}"):
-                    if not messages_to_send:
-                        st.warning("No messages prepared to send.")
+                if st.button(f"💬 Send Messages for {key}", key=f"send_{idx}"):
+                    if not messages:
+                        st.warning("No valid messages to send")
                     else:
-                        sent, failed = 0, 0
-                        for m in messages_to_send:
+                        sent = 0
+                        failed = 0
+                        
+                        for msg in messages:
                             try:
-                                # Format phone number (handles multiple input formats)
-                                phone = str(m['to']).strip()
-                                if phone.startswith('0') and len(phone) == 10:  # 0721809889 → +254721809889
-                                    phone = f"+254{phone[1:]}"
-                                elif len(phone) == 9 and phone[0] == '7':  # 721809889 → +254721809889
-                                    phone = f"+254{phone}"
-                                elif phone.startswith('254') and len(phone) == 12:  # 254721809889 → +254721809889
-                                    phone = f"+{phone}"
-                                elif not phone.startswith('+'):
-                                    phone = f"+{phone}"  # Fallback
-
-                                # Validate phone format
-                                if not (phone.startswith('+254') and len(phone) == 13):
-                                    st.error(f"Invalid phone format: {phone}")
-                                    failed += 1
-                                    continue
-
-                                # Send message with comprehensive error handling
-                                try:
-                                    response = sms.send(
-                                        message=m['text'],
-                                        recipients=[phone],
-                                        sender_id=sender_id
-                                    )
-
-                                    # Parse response with multiple fallbacks
-                                    if not isinstance(response, dict):
-                                        st.error(f"Invalid response type: {type(response)}")
-                                        failed += 1
-                                        continue
-
-                                    if 'SMSMessageData' not in response:
-                                        st.error(f"Missing SMSMessageData in response: {response}")
-                                        failed += 1
-                                        continue
-
-                                    recipients = response['SMSMessageData'].get('Recipients', [])
-                                    if not recipients or not isinstance(recipients, list):
-                                        st.error(f"Invalid recipients format: {recipients}")
-                                        failed += 1
-                                        continue
-
-                                    if len(recipients) == 0:
-                                        st.error(f"Empty recipients list in response")
-                                        failed += 1
-                                        continue
-
-                                    status = recipients[0].get('status', 'Failed')
-                                    if status == "Success":
+                                # Send via Africa's Talking
+                                response = sms.send(
+                                    message=msg['message'],
+                                    recipients=[f"+{msg['phone']}"],  # Add + prefix here
+                                    sender_id=sender_id
+                                )
+                                
+                                # Check response
+                                if (isinstance(response, dict) and 
+                                    'SMSMessageData' in response and 
+                                    isinstance(response['SMSMessageData'].get('Recipients'), list) and
+                                    len(response['SMSMessageData']['Recipients']) > 0):
+                                    
+                                    recipient = response['SMSMessageData']['Recipients'][0]
+                                    if recipient.get('status') == "Success":
                                         sent += 1
                                     else:
-                                        error_msg = recipients[0].get('message', 'No error message provided')
-                                        st.error(f"Failed to send to {phone}: {status} - {error_msg}")
+                                        st.error(f"Failed to send to +{msg['phone']}: {recipient.get('message', 'Unknown error')}")
                                         failed += 1
-
-                                except Exception as api_error:
+                                else:
+                                    st.error(f"Invalid response format for +{msg['phone']}")
                                     failed += 1
-                                    st.error(f"API Error for {phone}: {str(api_error)}")
-                                    continue
-
+                                    
                             except Exception as e:
+                                st.error(f"Error sending to +{msg['phone']}: {str(e)}")
                                 failed += 1
-                                st.error(f"Processing error: {str(e)}")
-                                continue
-
-                        # Display final results
+                        
+                        # Show results
                         if sent > 0:
-                            st.success(f"✅ Successfully sent: {sent} messages")
+                            st.success(f"✅ Successfully sent {sent} messages")
                         if failed > 0:
-                            st.error(f"❌ Failed to send: {failed} messages")
-
-                        # Debug output (remove in production)
-                        st.json({"success": sent, "failed": failed})
-                        st.balloons()  # Celebrate success    
+                            st.error(f"❌ Failed to send {failed} messages")
+                            st.balloons()  # Celebrate success    
+                            
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
         st.header("Complete Analysis Report")
