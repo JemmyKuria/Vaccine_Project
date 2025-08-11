@@ -371,7 +371,7 @@ class Dashboard:
         messages_to_send = []
 
         for idx, (key, details) in enumerate(barrier_recs.items()):
-            with st.expander(f"Barrier {idx+1}: {details.get('insight', '')}"):
+            with st.expander(f"Barrier {idx + 1}: {details.get('insight', '')}"):
                 barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
                 st.markdown(f"**People affected (approx)**: {details.get('numeric_value', 0)}")
 
@@ -410,18 +410,6 @@ class Dashboard:
                 else:
                     st.warning("No contact data available (need 'name' and 'phone_number' columns)")
 
-                def format_to_e164(phone):
-                    phone = str(phone).strip().replace(" ", "").replace("-", "")
-                    
-                    if phone.startswith("+254"):
-                        return phone
-                    elif phone.startswith("0"):
-                        return "+254" + phone[1:]
-                    elif phone.startswith("7"):
-                        return "+254" + phone
-                    else:
-                        raise ValueError(f"Invalid phone number format: {phone}")
-
                 # Apply to your dataframe before sending
                 df['phone_number'] = df['phone_number'].apply(format_to_e164)
 
@@ -450,17 +438,6 @@ class Dashboard:
                 # Show message count
                 st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
 
-                def format_to_e164(phone):
-                    phone = str(phone).strip().replace(" ", "").replace("-", "")
-                    if phone.startswith("+254"):
-                        return phone
-                    elif phone.startswith("0"):
-                        return "+254" + phone[1:]
-                    elif phone.startswith("7"):
-                        return "+254" + phone
-                    else:
-                        raise ValueError(f"Invalid phone number format: {phone}")
-
                 # Send messages button
                 if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
@@ -471,12 +448,12 @@ class Dashboard:
                             try:
                                 response = sms.send(
                                     message=m['text'],
-                                    recipients=[formatted_phone],
+                                    recipients=[m['to']],
                                     sender_id=sender_id
                                 )
                                 if 'SMSMessageData' in response and 'Recipients' in response['SMSMessageData']:
                                     recipients = response['SMSMessageData']['Recipients']
-                                    if recipients and 'status' in recipients[0]:
+                                    if recipients and isinstance(recipients, list) and 'status' in recipients[0]:
                                         if recipients[0]['status'] == "Success":
                                             sent += 1
                                         else:
