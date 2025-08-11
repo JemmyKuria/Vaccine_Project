@@ -405,6 +405,9 @@ class Dashboard:
                 if 'name' in df.columns and 'phone_number' in df.columns:
                     num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
                     contacts_to_send = df[['name', 'phone_number']].head(num_messages)
+                    contacts_to_send = df[['name', 'phone_number']].head(num_messages).copy()
+                    contacts_to_send['phone_number'] = contacts_to_send['phone_number'].astype(str)
+
                     
                     for _, row in contacts_to_send.iterrows():
                         if vaccine_type == "H1N1":
