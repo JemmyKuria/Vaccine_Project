@@ -5,11 +5,6 @@ from typing import Dict, List, Optional
 from faker import Faker
 from twilio.rest import Client
 
-fake = Faker()
-
-# Optional import for Twilio only when sending
-# from twilio.rest import Client
-
 # Init Faker
 fake = Faker()
 
@@ -114,14 +109,6 @@ class VaccineAnalyzer:
     @staticmethod
     def _analyze_barriers(df: pd.DataFrame) -> List[Dict]:
         df = df.copy()
-        # Only show top 10 barriers by affected people
-        barrier_recs = dict(sorted(
-        recommendations.get("Barrier Messages", {}).items(),
-        key=lambda x: -x[1].get('numeric_value', 0))[:10])
-    
-    if not barrier_recs:
-        st.warning("No barrier messages available.")
-        return
         # Focus on those predicted not to vaccinate
         if 'h1n1_vaccine_pred' in df.columns and 'seasonal_vaccine_pred' in df.columns:
             df_target = df[(df['h1n1_vaccine_pred'] == 0) | (df['seasonal_vaccine_pred'] == 0)].copy()
@@ -299,8 +286,6 @@ class RecommendationEngine:
             }
         return recommendations
 
-
-    
 # ---------------- Dashboard Components ----------------
 class Dashboard:
     @staticmethod
@@ -353,7 +338,8 @@ class Dashboard:
         else:
             st.info("No medical leverage points found.")
 
-    def show_barrier_messages(recommendations: dict):
+    @staticmethod
+    def show_barrier_messages(recommendations: Dict):
         st.header("📨 Personalized Messaging Recommendations")
 
         barrier_recs = recommendations.get("Barrier Messages", {})
@@ -405,7 +391,7 @@ class Dashboard:
                 st.table(pd.DataFrame(contacts))
 
                 # Add to send list
-                for _ in range(min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))):
+                for _ in range(min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1))):
                     name = fake.first_name()
                     phone = fake.phone_number()
                     if vaccine_type == "H1N1":
@@ -435,7 +421,6 @@ class Dashboard:
                         failed += 1
 
                 st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
-
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
