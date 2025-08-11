@@ -114,6 +114,14 @@ class VaccineAnalyzer:
     @staticmethod
     def _analyze_barriers(df: pd.DataFrame) -> List[Dict]:
         df = df.copy()
+        # Only show top 10 barriers by affected people
+        barrier_recs = dict(sorted(
+        recommendations.get("Barrier Messages", {}).items(),
+        key=lambda x: -x[1].get('numeric_value', 0))[:10])
+    
+    if not barrier_recs:
+        st.warning("No barrier messages available.")
+        return
         # Focus on those predicted not to vaccinate
         if 'h1n1_vaccine_pred' in df.columns and 'seasonal_vaccine_pred' in df.columns:
             df_target = df[(df['h1n1_vaccine_pred'] == 0) | (df['seasonal_vaccine_pred'] == 0)].copy()
