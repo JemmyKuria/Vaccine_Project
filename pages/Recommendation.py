@@ -460,7 +460,7 @@ class Dashboard:
                             try:
                                 response = sms.send(
                                     message=m['text'],
-                                    recipients=[m['to']],
+                                    recipients=[formatted_phone],
                                     sender_id=sender_id
                                 )
                                 if 'SMSMessageData' in response and 'Recipients' in response['SMSMessageData']:
