@@ -3,6 +3,9 @@ import pandas as pd
 import plotly.express as px
 from typing import Dict, List, Optional
 from faker import Faker
+from twilio.rest import Client
+
+fake = Faker()
 
 # Optional import for Twilio only when sending
 # from twilio.rest import Client
@@ -303,6 +306,8 @@ class RecommendationEngine:
             }
         return recommendations
 
+
+    
 # ---------------- Dashboard Components ----------------
 class Dashboard:
     @staticmethod
@@ -354,13 +359,6 @@ class Dashboard:
                 cols[1].metric("Impact", f"+{details.get('numeric_value', 0)}%")
         else:
             st.info("No medical leverage points found.")
-
-import streamlit as st
-import pandas as pd
-from faker import Faker
-from twilio.rest import Client
-
-fake = Faker()
 
     def show_barrier_messages(recommendations: dict):
         st.header("📨 Personalized Messaging Recommendations")
@@ -444,6 +442,7 @@ fake = Faker()
                         failed += 1
 
                 st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
+
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
