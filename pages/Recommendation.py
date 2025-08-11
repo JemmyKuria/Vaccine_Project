@@ -423,7 +423,7 @@ class Dashboard:
                 # Show message count
                 st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
 
-                # Send messages button
+                # In the message sending section, modify the phone number handling:
                 if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
                         st.warning("No messages prepared to send.")
@@ -431,9 +431,15 @@ class Dashboard:
                         sent, failed = 0, 0
                         for m in messages_to_send:
                             try:
+                                # Convert phone number to string and ensure proper format
+                                phone_number = str(m['to']).strip()
+                                if not phone_number.startswith('+'):
+                                    # Add country code if missing (assuming Kenya here)
+                                    phone_number = f"+254{phone_number[-9:]}"  # Converts 0721809889 to +254721809889
+                                
                                 response = sms.send(
                                     message=m['text'],
-                                    recipients=[m['to']],
+                                    recipients=[phone_number],  # Now properly formatted as string
                                     sender_id=sender_id
                                 )
                                 if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
@@ -442,7 +448,7 @@ class Dashboard:
                                     failed += 1
                             except Exception as e:
                                 failed += 1
-                                st.error(f"Error sending to {m['to']}: {str(e)}")
+                                st.error(f"Error sending to {phone_number}: {str(e)}")
 
                         st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
                         messages_to_send = []  # Clear sent messages
