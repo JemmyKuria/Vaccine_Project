@@ -450,6 +450,19 @@ class Dashboard:
                 # Show message count
                 st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
 
+                def format_to_e164(phone):
+                    phone = str(phone).strip().replace(" ", "").replace("-", "")
+                    if phone.startswith("+254"):
+                        return phone
+                    elif phone.startswith("0"):
+                        return "+254" + phone[1:]
+                    elif phone.startswith("7"):
+                        return "+254" + phone
+                    else:
+                        raise ValueError(f"Invalid phone number format: {phone}")
+
+                # Apply the formatting to the phone number
+                formatted_phone = format_to_e164("+254721809889")
                 # Send messages button
                 if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
