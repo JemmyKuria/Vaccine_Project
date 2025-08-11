@@ -461,8 +461,6 @@ class Dashboard:
                     else:
                         raise ValueError(f"Invalid phone number format: {phone}")
 
-                # Apply the formatting to the phone number
-                formatted_phone = format_to_e164("+254721809889")
                 # Send messages button
                 if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
