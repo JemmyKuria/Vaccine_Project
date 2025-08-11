@@ -423,63 +423,80 @@ class Dashboard:
                         sent, failed = 0, 0
                         for m in messages_to_send:
                             try:
-                                # Format phone number
-                                phone = str(m['to']).strip().replace(" ", "")
-
-                                # Handle all possible Kenyan phone number formats:
-                                if phone.startswith('0') and len(phone) == 10:  # Format: 0721809889 → +254721809889
+                                # Format phone number (handles multiple input formats)
+                                phone = str(m['to']).strip()
+                                if phone.startswith('0') and len(phone) == 10:  # 0721809889 → +254721809889
                                     phone = f"+254{phone[1:]}"
-                                elif phone.startswith('254') and len(phone) == 12:  # Format: 254721809889 → +254721809889
-                                    phone = f"+{phone}"
-                                elif len(phone) == 9 and phone[0] == '7':  # Format: 721809889 → +254721809889
+                                elif len(phone) == 9 and phone[0] == '7':  # 721809889 → +254721809889
                                     phone = f"+254{phone}"
-                                elif not phone.startswith('+'):  # Fallback for any other numbers
-                                    phone = f"+254{phone}" if len(phone) == 9 else f"+{phone}"
+                                elif phone.startswith('254') and len(phone) == 12:  # 254721809889 → +254721809889
+                                    phone = f"+{phone}"
+                                elif not phone.startswith('+'):
+                                    phone = f"+{phone}"  # Fallback
 
-                                # Final validation for Kenyan numbers
-                                if not (phone.startswith('+254') and len(phone) == 13 and phone[4] in ['1', '7']):
-                                    st.error(f"Invalid Kenyan phone format: {phone} (expected +2547xxxxxxxx or +2541xxxxxxxx)")
-                                    failed += 1
-                                    continue
-                                
-                                # Validate phone number
+                                # Validate phone format
                                 if not (phone.startswith('+254') and len(phone) == 13):
                                     st.error(f"Invalid phone format: {phone}")
                                     failed += 1
                                     continue
-                                
-                                # Send message
-                                response = sms.send(
-                                    message=m['text'],
-                                    recipients=[phone],
-                                    sender_id=sender_id
-                                )
-                                
-                                # Check response
-                                if isinstance(response, dict) and 'SMSMessageData' in response:
-                                    if response['SMSMessageData'].get('Recipients'):
-                                        status = response['SMSMessageData']['Recipients'][0].get('status', 'Failed')
-                                        if status == "Success":
-                                            sent += 1
-                                        else:
-                                            error_msg = response['SMSMessageData']['Recipients'][0].get('message', 'Unknown error')
-                                            st.error(f"Failed to send to {phone}: {error_msg}")
-                                            failed += 1
-                                    else:
-                                        st.error(f"Unexpected response format for {phone}")
+
+                                # Send message with comprehensive error handling
+                                try:
+                                    response = sms.send(
+                                        message=m['text'],
+                                        recipients=[phone],
+                                        sender_id=sender_id
+                                    )
+
+                                    # Parse response with multiple fallbacks
+                                    if not isinstance(response, dict):
+                                        st.error(f"Invalid response type: {type(response)}")
                                         failed += 1
-                                else:
-                                    st.error(f"Invalid API response for {phone}")
+                                        continue
+
+                                    if 'SMSMessageData' not in response:
+                                        st.error(f"Missing SMSMessageData in response: {response}")
+                                        failed += 1
+                                        continue
+
+                                    recipients = response['SMSMessageData'].get('Recipients', [])
+                                    if not recipients or not isinstance(recipients, list):
+                                        st.error(f"Invalid recipients format: {recipients}")
+                                        failed += 1
+                                        continue
+
+                                    if len(recipients) == 0:
+                                        st.error(f"Empty recipients list in response")
+                                        failed += 1
+                                        continue
+
+                                    status = recipients[0].get('status', 'Failed')
+                                    if status == "Success":
+                                        sent += 1
+                                    else:
+                                        error_msg = recipients[0].get('message', 'No error message provided')
+                                        st.error(f"Failed to send to {phone}: {status} - {error_msg}")
+                                        failed += 1
+
+                                except Exception as api_error:
                                     failed += 1
-                                    
+                                    st.error(f"API Error for {phone}: {str(api_error)}")
+                                    continue
+
                             except Exception as e:
                                 failed += 1
-                                st.error(f"Error sending to {phone}: {str(e)}")
+                                st.error(f"Processing error: {str(e)}")
+                                continue
 
-                        st.success(f"✅ Sent: {sent} messages")
+                        # Display final results
+                        if sent > 0:
+                            st.success(f"✅ Successfully sent: {sent} messages")
                         if failed > 0:
-                            st.error(f"❌ Failed: {failed} messages")
-        
+                            st.error(f"❌ Failed to send: {failed} messages")
+
+                        # Debug output (remove in production)
+                        st.json({"success": sent, "failed": failed})
+                        st.balloons()  # Celebrate success    
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
         st.header("Complete Analysis Report")
