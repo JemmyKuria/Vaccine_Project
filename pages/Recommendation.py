@@ -3,19 +3,15 @@ import pandas as pd
 import plotly.express as px
 from typing import Dict, List, Optional
 from faker import Faker
-from twilio.rest import Client
-
-# Init Faker
-fake = Faker()
-
-
-import streamlit as st
 import africastalking
 
+# Initialize Faker
+fake = Faker()
+
+# Initialize Africa's Talking
 username = st.secrets["africastalking"]["username"]
 api_key = st.secrets["africastalking"]["api_key"]
 sender_id = st.secrets["africastalking"]["sender_id"]
-
 
 africastalking.initialize(username, api_key)
 sms = africastalking.SMS
@@ -351,7 +347,7 @@ class Dashboard:
             st.info("No medical leverage points found.")
 
     @staticmethod
-    def show_barrier_messages(recommendations: Dict):
+    def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
 
         barrier_recs = recommendations.get("Barrier Messages", {})
@@ -389,53 +385,46 @@ class Dashboard:
                 if vaccine_type in ["Seasonal", "Both"]:
                     s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
 
-               # Show 3 sample contacts from your own data
-                sample_contacts = df[['name', 'phone_number']].head(3).copy()
-
-                # Add personalized messages
-                sample_contacts['h1n1_msg'] = sample_contacts['name'].apply(
-                    lambda n: h1_msg.format(name=n) if "{name}" in h1_msg else h1_msg
-                )
-                sample_contacts['seasonal_msg'] = sample_contacts['name'].apply(
-                    lambda n: s_msg.format(name=n) if "{name}" in s_msg else s_msg
-                )
-
-                st.table(sample_contacts)
-
-                # Add to send list (up to 10 messages based on numeric_value)
-                messages_to_send = []
-                for _, row in df[['name', 'phone_number']].head(
-                        min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
-                    ).iterrows():
+                # Show sample contacts from your own data
+                if 'name' in df.columns and 'phone_number' in df.columns:
+                    sample_contacts = df[['name', 'phone_number']].head(3).copy()
                     
-                    if vaccine_type == "H1N1":
-                        msg_text = h1_msg.format(name=row['name'])
-                    elif vaccine_type == "Seasonal":
-                        msg_text = s_msg.format(name=row['name'])
-                    else:
-                        msg_text = (
-                            f"{h1_msg.format(name=row['name'])}\n\n{s_msg.format(name=row['name'])}"
-                        )
+                    # Add personalized messages
+                    sample_contacts['h1n1_msg'] = sample_contacts['name'].apply(
+                        lambda n: h1_msg.format(name=n) if "{name}" in h1_msg else h1_msg
+                    )
+                    sample_contacts['seasonal_msg'] = sample_contacts['name'].apply(
+                        lambda n: s_msg.format(name=n) if "{name}" in s_msg else s_msg
+                    )
+                    
+                    st.table(sample_contacts)
+                else:
+                    st.warning("No contact data available (need 'name' and 'phone_number' columns)")
 
-                    messages_to_send.append({
-                        'to': row['phone_number'],  # Your own phone number column
-                        'name': row['name'],
-                        'text': msg_text
-                    })
-                # Show message preview
-                st.markdown("**Message Preview:**")
-                for m in messages_to_send[:3]:  # Show first 3
-                    st.markdown(f"To: {m['to']}\nMessage: {m['text']}")
-                st.markdown("---")
-                # Add a button to send messages
-                if len(messages_to_send) > 0:
-                    st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
-                st.markdown("---")
+                # Prepare messages to send
+                if 'name' in df.columns and 'phone_number' in df.columns:
+                    num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1))
+                    contacts_to_send = df[['name', 'phone_number']].head(num_messages)
+                    
+                    for _, row in contacts_to_send.iterrows():
+                        if vaccine_type == "H1N1":
+                            msg_text = h1_msg.format(name=row['name'])
+                        elif vaccine_type == "Seasonal":
+                            msg_text = s_msg.format(name=row['name'])
+                        else:
+                            msg_text = f"{h1_msg.format(name=row['name'])}\n\n{s_msg.format(name=row['name'])}"
+                        
+                        messages_to_send.append({
+                            'to': row['phone_number'],
+                            'name': row['name'],
+                            'text': msg_text
+                        })
+
                 # Show message count
                 st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
 
-            # Send messages button
-                if st.button("📤 Send All Messages"):
+                # Send messages button
+                if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
                         st.warning("No messages prepared to send.")
                     else:
@@ -444,20 +433,19 @@ class Dashboard:
                             try:
                                 response = sms.send(
                                     message=m['text'],
-                                    recipients=[m['to']],   # must be in international format, e.g. +2547...
-                                    sender_id=st.secrets["africastalking"]["sender_id"]  # optional
+                                    recipients=[m['to']],
+                                    sender_id=sender_id
                                 )
-                                # Check if message status is "Success"
                                 if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
                                     sent += 1
                                 else:
                                     failed += 1
                             except Exception as e:
                                 failed += 1
-                                st.error(f"Error sending to {m['to']}: {e}")
+                                st.error(f"Error sending to {m['to']}: {str(e)}")
 
                         st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
-
+                        messages_to_send = []  # Clear sent messages
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
@@ -512,10 +500,16 @@ class Dashboard:
 
         df = pd.DataFrame(export_data)
 
-        st.sidebar.download_button("📥 Download Full Report (JSON)", data=df.to_json(orient='records'),
-                                   file_name="vaccine_recommendations.json")
-        st.sidebar.download_button("📊 Executive Summary (CSV)", data=df.to_csv(index=False),
-                                   file_name="vaccine_recommendations.csv")
+        st.sidebar.download_button(
+            "📥 Download Full Report (JSON)",
+            data=df.to_json(orient='records'),
+            file_name="vaccine_recommendations.json"
+        )
+        st.sidebar.download_button(
+            "📊 Executive Summary (CSV)",
+            data=df.to_csv(index=False),
+            file_name="vaccine_recommendations.csv"
+        )
 
 # ---------------- Main ----------------
 def main():
@@ -549,7 +543,7 @@ def main():
         Dashboard.show_factors(recommendations)
 
     with tab3:
-        Dashboard.show_barrier_messages(recommendations)
+        Dashboard.show_barrier_messages(recommendations, df)
 
     with tab4:
         Dashboard.show_analysis_report(analysis, recommendations)
