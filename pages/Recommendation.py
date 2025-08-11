@@ -347,7 +347,6 @@ class Dashboard:
             st.info("No medical leverage points found.")
 
     @staticmethod
-    @staticmethod
     def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
 
@@ -465,7 +464,7 @@ class Dashboard:
                         if failed > 0:
                             st.error(f"❌ Failed to send {failed} messages")
                             st.balloons()  # Celebrate success    
-                            
+
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
         st.header("Complete Analysis Report")
