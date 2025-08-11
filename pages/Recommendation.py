@@ -355,121 +355,95 @@ class Dashboard:
         else:
             st.info("No medical leverage points found.")
 
-    @staticmethod
-    def show_barrier_messages(recommendations: Dict):
-        st.header("📨 Personalized Messaging Recommendations")
+import streamlit as st
+import pandas as pd
+from faker import Faker
+from twilio.rest import Client
 
-        barrier_recs = recommendations.get("Barrier Messages", {})
-        if not barrier_recs:
-            st.warning("No barrier messages available.")
-            return
+fake = Faker()
 
-        # Vaccine type selector
-        vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal", "Both"], horizontal=True, index=2)
+def show_barrier_messages(recommendations: dict):
+    st.header("📨 Personalized Messaging Recommendations")
 
-        # Number of templates to preview
-        n_preview = st.slider("Number of message templates to preview:", 1, 10, 5)
+    barrier_recs = recommendations.get("Barrier Messages", {})
+    if not barrier_recs:
+        st.warning("No barrier messages available.")
+        return
 
-        st.subheader(f"Top {n_preview} Message Templates (preview)")
+    # Vaccine type selector
+    vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal", "Both"], horizontal=True, index=2)
 
-        # Convert recommendations dict to list sorted by numeric_value (descending)
-        sorted_barriers = sorted(barrier_recs.items(), key=lambda x: x[1].get('numeric_value', 0), reverse=True)
-        preview = sorted_barriers[:n_preview]
+    st.subheader("Message Templates (editable)")
+    messages_to_send = []
 
-        # Create a send area
-        send_mode = st.radio("Message mode:", ["Simulate only (no SMS)", "Send SMS (requires Twilio creds)"], index=0)
-        send_button = st.button("Run Messaging for Previewed Templates")
+    for idx, (key, details) in enumerate(barrier_recs.items()):
+        with st.expander(f"Barrier {idx+1}: {details.get('insight', '')}"):
+            barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
+            st.markdown(f"**People affected (approx)**: {details.get('numeric_value', 0)}")
 
-        # Prepare messages list for possible sending
-        messages_to_send = []
-
-        for idx, (key, details) in enumerate(preview):
-            with st.expander(f"Template {idx+1}: {details.get('insight', '')}"):
-                primary_barrier = details.get('insight', '').replace('Detected barrier: ', '')
-                st.markdown(f"**Barrier**: {primary_barrier}")
-                st.markdown(f"**People affected (approx)**: {details.get('numeric_value', 0)}")
-                # extract messages from action text
-                action_text = details.get('action', '')
-                # action_text formatted: "H1N1: <msg>\n\nSeasonal: <msg>"
-                h1_msg = ""
-                s_msg = ""
-                if "H1N1:" in action_text and "Seasonal:" in action_text:
-                    try:
-                        h1_msg = action_text.split("H1N1: ")[1].split("\n\nSeasonal: ")[0].strip()
-                        s_msg = action_text.split("\n\nSeasonal: ")[1].strip()
-                    except Exception:
-                        h1_msg = action_text
-                        s_msg = action_text
-                else:
-                    # fallback
+            # Extract original messages
+            action_text = details.get('action', '')
+            h1_msg, s_msg = "", ""
+            if "H1N1:" in action_text and "Seasonal:" in action_text:
+                try:
+                    h1_msg = action_text.split("H1N1: ")[1].split("\n\nSeasonal: ")[0].strip()
+                    s_msg = action_text.split("\n\nSeasonal: ")[1].strip()
+                except:
                     h1_msg = action_text
                     s_msg = action_text
-
-                # Show messages according to vaccine_type
-                if vaccine_type in ["H1N1", "Both"]:
-                    st.info(f"**H1N1 message sample:** {h1_msg}")
-                if vaccine_type in ["Seasonal", "Both"]:
-                    st.success(f"**Seasonal message sample:** {s_msg}")
-
-                # create fake contacts for this template (3 examples)
-                examples = []
-                for _ in range(3):
-                    name = fake.first_name()
-                    phone = fake.phone_number()
-                    examples.append({'name': name, 'phone': phone,
-                                     'h1n1_msg': h1_msg.format(name=name) if isinstance(h1_msg, str) else "",
-                                     'seasonal_msg': s_msg.format(name=name) if isinstance(s_msg, str) else ""})
-                st.table(pd.DataFrame(examples))
-
-                # If user clicked to run messaging, prepare send list
-                if send_button:
-                    # For simulation we will take up to 10 fake recipients per template
-                    for _ in range(min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))):
-                        name = fake.first_name()
-                        phone = fake.phone_number()
-                        msg_text = ""
-                        if vaccine_type == "H1N1":
-                            msg_text = details.get('action', '').split("H1N1: ")[1].split("\n\nSeasonal: ")[0].format(name=name)
-                        elif vaccine_type == "Seasonal":
-                            msg_text = details.get('action', '').split("\n\nSeasonal: ")[1].format(name=name)
-                        else:
-                            # Both -> send both combined
-                            h = details.get('action', '').split("H1N1: ")[1].split("\n\nSeasonal: ")[0].format(name=name)
-                            s = details.get('action', '').split("\n\nSeasonal: ")[1].format(name=name)
-                            msg_text = h + "\n\n" + s
-                        messages_to_send.append({'to': phone, 'name': name, 'text': msg_text})
-
-        # If user asked to run messaging
-        if send_button:
-            if not messages_to_send:
-                st.warning("No messages prepared to send.")
             else:
-                if send_mode.startswith("Simulate"):
-                    st.success(f"Simulated sending {len(messages_to_send)} messages.")
-                    for m in messages_to_send[:10]:
-                        st.text(f"To: {m['name']} ({m['to']}) -> {m['text']}")
+                h1_msg = s_msg = action_text
+
+            # Editable message fields
+            if vaccine_type in ["H1N1", "Both"]:
+                h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
+            if vaccine_type in ["Seasonal", "Both"]:
+                s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
+
+            # Show 3 fake contacts
+            contacts = []
+            for _ in range(3):
+                name = fake.first_name()
+                phone = fake.phone_number()
+                contacts.append({
+                    'name': name,
+                    'phone': phone,
+                    'h1n1_msg': h1_msg.format(name=name) if "{name}" in h1_msg else h1_msg,
+                    'seasonal_msg': s_msg.format(name=name) if "{name}" in s_msg else s_msg
+                })
+            st.table(pd.DataFrame(contacts))
+
+            # Add to send list
+            for _ in range(min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))):
+                name = fake.first_name()
+                phone = fake.phone_number()
+                if vaccine_type == "H1N1":
+                    msg_text = h1_msg.format(name=name)
+                elif vaccine_type == "Seasonal":
+                    msg_text = s_msg.format(name=name)
                 else:
-                    # Send via Twilio - read credentials from st.secrets
-                    sid = st.secrets.get('twilio', {}).get('account_sid')
-                    token = st.secrets.get('twilio', {}).get('auth_token')
-                    from_number = st.secrets.get('twilio', {}).get('from_number')
-                    if not sid or not token or not from_number:
-                        st.error("Twilio credentials not found in st.secrets. Please add twilio.account_sid, twilio.auth_token, twilio.from_number.")
-                    else:
-                        try:
-                            from twilio.rest import Client
-                            client = Client(sid, token)
-                            sent = 0
-                            failed = 0
-                            for m in messages_to_send:
-                                try:
-                                    client.messages.create(body=m['text'], from_=from_number, to=m['to'])
-                                    sent += 1
-                                except Exception as e:
-                                    failed += 1
-                            st.success(f"Sent: {sent} messages; Failed: {failed}")
-                        except Exception as e:
-                            st.error(f"Error sending messages: {e}")
+                    msg_text = f"{h1_msg.format(name=name)}\n\n{s_msg.format(name=name)}"
+                messages_to_send.append({'to': phone, 'name': name, 'text': msg_text})
+
+    # Send messages button
+    if st.button("📤 Send All Messages"):
+        if not messages_to_send:
+            st.warning("No messages prepared to send.")
+        else:
+            sid = st.secrets["twilio"]["account_sid"]
+            token = st.secrets["twilio"]["auth_token"]
+            from_number = st.secrets["twilio"]["from_number"]
+
+            client = Client(sid, token)
+            sent, failed = 0, 0
+            for m in messages_to_send:
+                try:
+                    client.messages.create(body=m['text'], from_=from_number, to=m['to'])
+                    sent += 1
+                except:
+                    failed += 1
+
+            st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
