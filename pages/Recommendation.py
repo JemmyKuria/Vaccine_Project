@@ -434,18 +434,33 @@ class Dashboard:
                                 # Convert phone number to string and ensure proper format
                                 phone_number = str(m['to']).strip()
                                 if not phone_number.startswith('+'):
-                                    # Add country code if missing (assuming Kenya here)
-                                    phone_number = f"+254{phone_number[-9:]}"  # Converts 0721809889 to +254721809889
+                                    phone_number = f"+254{phone_number[-9:]}"
                                 
+                                # Send message
                                 response = sms.send(
                                     message=m['text'],
-                                    recipients=[phone_number],  # Now properly formatted as string
+                                    recipients=[phone_number],
                                     sender_id=sender_id
                                 )
-                                if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
-                                    sent += 1
+                                
+                                # Improved response handling
+                                if 'SMSMessageData' in response:
+                                    recipients = response['SMSMessageData'].get('Recipients', [])
+                                    if recipients and isinstance(recipients, list):
+                                        status = recipients[0].get('status', 'Failed')
+                                        if status == "Success":
+                                            sent += 1
+                                        else:
+                                            failed += 1
+                                            error_msg = recipients[0].get('message', 'Unknown error')
+                                            st.error(f"Failed to send to {phone_number}: {error_msg}")
+                                    else:
+                                        failed += 1
+                                        st.error(f"Unexpected response format for {phone_number}")
                                 else:
                                     failed += 1
+                                    st.error(f"Invalid API response for {phone_number}")
+                                    
                             except Exception as e:
                                 failed += 1
                                 st.error(f"Error sending to {phone_number}: {str(e)}")
