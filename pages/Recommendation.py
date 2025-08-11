@@ -403,7 +403,7 @@ class Dashboard:
 
                 # Prepare messages to send
                 if 'name' in df.columns and 'phone_number' in df.columns:
-                    num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1))
+                    num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
                     contacts_to_send = df[['name', 'phone_number']].head(num_messages)
                     
                     for _, row in contacts_to_send.iterrows():
