@@ -391,7 +391,7 @@ class Dashboard:
                 st.table(pd.DataFrame(contacts))
 
                 # Add to send list
-                for _ in range(min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1))):
+                for _ in range(min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))):
                     name = fake.first_name()
                     phone = fake.phone_number()
                     if vaccine_type == "H1N1":
