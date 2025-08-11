@@ -423,28 +423,28 @@ africastalking.initialize(username, api_key)
 sms = africastalking.SMS
 
 # Send messages button
-        if st.button("📤 Send All Messages"):
-            if not messages_to_send:
-                st.warning("No messages prepared to send.")
-            else:
-                sent, failed = 0, 0
-                for m in messages_to_send:
-                    try:
-                        response = sms.send(
-                            message=m['text'],
-                            recipients=[m['to']],   # must be in international format, e.g. +2547...
-                            sender_id=st.secrets["africastalking"]["sender_id"]  # optional
-                        )
-                        # Check if message status is "Success"
-                        if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
-                            sent += 1
-                        else:
-                            failed += 1
-                    except Exception as e:
+    if st.button("📤 Send All Messages"):
+        if not messages_to_send:
+            st.warning("No messages prepared to send.")
+        else:
+            sent, failed = 0, 0
+            for m in messages_to_send:
+                try:
+                    response = sms.send(
+                        message=m['text'],
+                        recipients=[m['to']],   # must be in international format, e.g. +2547...
+                        sender_id=st.secrets["africastalking"]["sender_id"]  # optional
+                    )
+                    # Check if message status is "Success"
+                    if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
+                        sent += 1
+                    else:
                         failed += 1
-                        st.error(f"Error sending to {m['to']}: {e}")
+                except Exception as e:
+                    failed += 1
+                    st.error(f"Error sending to {m['to']}: {e}")
 
-                st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
+            st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
 
 
     @staticmethod
