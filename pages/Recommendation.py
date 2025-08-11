@@ -179,9 +179,15 @@ class VaccineAnalyzer:
 
         # Build output list
         profiles_output = []
+        seen_profiles = set()
         for _, row in profile_counts.iterrows():
             profile = row['barrier_profile']
             count = int(row['people_affected'])
+
+            # Ensure unique profiles
+            if profile in seen_profiles:
+                continue
+            seen_profiles.add(profile)
 
             primary = profile.split(' + ')[0] if profile != "No Major Barrier" else "No Major Barrier"
             if primary not in barrier_messages:
