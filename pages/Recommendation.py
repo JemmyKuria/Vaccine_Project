@@ -217,7 +217,7 @@ class Dashboard:
         for factor_type in ["Behavioral Factors", "Medical Factors"]:
             for details in recommendations.get(factor_type, {}).values():
                 if 'r=' in details.get('insight', ''):
-                    importance.append(abs(float(details['insight'].split('r=')[1][:4]))
+                    importance.append(abs(float(details['insight'].split('r=')[1][:4])))
                 else:
                     importance.append(details.get('numeric_value', 0) / 100)
                 features.append(details.get('action', '').split('about ')[-1].title())
