@@ -26,7 +26,7 @@ metric4.metric("Double Non-Takers",
                help="Predicted to take neither vaccine")
 
 # 3. Main Dashboard Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Demographics", "🧠 Behavioral Insights", "🔄 Relationships", "📤 Export"])
+tab1, tab2, tab3 = st.tabs(["📊 Demographics", "🧠 Behavioral Insights", "📤 Export"])
 
 with tab1:  # Demographic Analysis
     st.subheader("Population Breakdown")
@@ -128,43 +128,9 @@ with tab2:  # Behavioral Insights (Simplified)
             Tailored messaging showing individual susceptibility may be effective.
             """)
 
-            
-with tab3:  # Relationships (Simplified)
-    st.subheader("Feature Relationships")
-    
-    # Simplified Correlation Heatmap
-    num_cols = results.select_dtypes(include=['number']).columns.tolist()
-    corr_matrix = results[num_cols].corr()
-    
-    fig = go.Figure(go.Heatmap(
-        z=corr_matrix,
-        x=corr_matrix.columns,
-        y=corr_matrix.columns,
-        colorscale='RdBu',
-        zmin=-1,
-        zmax=1
-    ))
-    fig.update_layout(title="Feature Correlation Matrix")
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Simplified Parallel Coordinates
-    st.subheader("Multivariate Analysis")
-    parallel_vars = st.multiselect(
-        "Select variables for parallel coordinates:",
-        num_cols,
-        default=num_cols[:4] if len(num_cols) > 3 else num_cols
-    )
-    
-    if len(parallel_vars) > 1:
-        fig = px.parallel_coordinates(
-            results,
-            dimensions=parallel_vars,
-            color='h1n1_label',
-            color_continuous_scale=['#EF553B', '#636EFA']
-        )
-        st.plotly_chart(fig, use_container_width=True)
 
-with tab4:  # Data Export
+
+with tab3:  # Data Export
     st.subheader("Export Results")
     
     with st.expander("📄 Preview Data"):
