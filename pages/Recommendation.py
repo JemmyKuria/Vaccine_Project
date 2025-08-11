@@ -12,9 +12,10 @@ fake = Faker()
 import streamlit as st
 import africastalking
 
-# Initialize Africa's Talking
-username = st.secrets["africastalking"]["Vaccine"]   # e.g. "sandbox"
-api_key = st.secrets["africastalking"]["atsk_5e057c7ccddb937720fdfe14339c2ae72406709be0a9bed817ba7f0c1bafb9fdef368ef5"]     # from your dashboard
+username = st.secrets["africastalking"]["username"]
+api_key = st.secrets["africastalking"]["api_key"]
+sender_id = st.secrets["africastalking"]["sender_id"]
+
 
 africastalking.initialize(username, api_key)
 sms = africastalking.SMS
