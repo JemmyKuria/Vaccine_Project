@@ -8,6 +8,17 @@ from twilio.rest import Client
 # Init Faker
 fake = Faker()
 
+
+import streamlit as st
+import africastalking
+
+# Initialize Africa's Talking
+username = st.secrets["africastalking"]["Vaccine"]   # e.g. "sandbox"
+api_key = st.secrets["africastalking"]["atsk_5e057c7ccddb937720fdfe14339c2ae72406709be0a9bed817ba7f0c1bafb9fdef368ef5"]     # from your dashboard
+
+africastalking.initialize(username, api_key)
+sms = africastalking.SMS
+
 # ---------------- Page Configuration ----------------
 def configure_page():
     st.set_page_config(page_title="AI Recommendation Engine", layout="wide")
@@ -410,41 +421,41 @@ class Dashboard:
                         'name': row['name'],
                         'text': msg_text
                     })
+                # Show message preview
+                st.markdown("**Message Preview:**")
+                for m in messages_to_send[:3]:  # Show first 3
+                    st.markdown(f"To: {m['to']}\nMessage: {m['text']}")
+                st.markdown("---")
+                # Add a button to send messages
+                if len(messages_to_send) > 0:
+                    st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
+                st.markdown("---")
+                # Show message count
+                st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
 
-
-import streamlit as st
-import africastalking
-
-# Initialize Africa's Talking
-username = st.secrets["africastalking"]["Vaccine"]   # e.g. "sandbox"
-api_key = st.secrets["africastalking"]["atsk_5e057c7ccddb937720fdfe14339c2ae72406709be0a9bed817ba7f0c1bafb9fdef368ef5"]     # from your dashboard
-
-africastalking.initialize(username, api_key)
-sms = africastalking.SMS
-
-# Send messages button
-    if st.button("📤 Send All Messages"):
-        if not messages_to_send:
-            st.warning("No messages prepared to send.")
-        else:
-            sent, failed = 0, 0
-            for m in messages_to_send:
-                try:
-                    response = sms.send(
-                        message=m['text'],
-                        recipients=[m['to']],   # must be in international format, e.g. +2547...
-                        sender_id=st.secrets["africastalking"]["sender_id"]  # optional
-                    )
-                    # Check if message status is "Success"
-                    if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
-                        sent += 1
+            # Send messages button
+                if st.button("📤 Send All Messages"):
+                    if not messages_to_send:
+                        st.warning("No messages prepared to send.")
                     else:
-                        failed += 1
-                except Exception as e:
-                    failed += 1
-                    st.error(f"Error sending to {m['to']}: {e}")
+                        sent, failed = 0, 0
+                        for m in messages_to_send:
+                            try:
+                                response = sms.send(
+                                    message=m['text'],
+                                    recipients=[m['to']],   # must be in international format, e.g. +2547...
+                                    sender_id=st.secrets["africastalking"]["sender_id"]  # optional
+                                )
+                                # Check if message status is "Success"
+                                if response['SMSMessageData']['Recipients'][0]['status'] == "Success":
+                                    sent += 1
+                                else:
+                                    failed += 1
+                            except Exception as e:
+                                failed += 1
+                                st.error(f"Error sending to {m['to']}: {e}")
 
-            st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
+                        st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
 
 
     @staticmethod
