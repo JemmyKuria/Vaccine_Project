@@ -424,11 +424,23 @@ class Dashboard:
                         for m in messages_to_send:
                             try:
                                 # Format phone number
-                                phone = str(m['to']).strip()
-                                if phone.startswith('0'):
+                                phone = str(m['to']).strip().replace(" ", "")
+
+                                # Handle all possible Kenyan phone number formats:
+                                if phone.startswith('0') and len(phone) == 10:  # Format: 0721809889 → +254721809889
                                     phone = f"+254{phone[1:]}"
-                                elif not phone.startswith('+'):
+                                elif phone.startswith('254') and len(phone) == 12:  # Format: 254721809889 → +254721809889
                                     phone = f"+{phone}"
+                                elif len(phone) == 9 and phone[0] == '7':  # Format: 721809889 → +254721809889
+                                    phone = f"+254{phone}"
+                                elif not phone.startswith('+'):  # Fallback for any other numbers
+                                    phone = f"+254{phone}" if len(phone) == 9 else f"+{phone}"
+
+                                # Final validation for Kenyan numbers
+                                if not (phone.startswith('+254') and len(phone) == 13 and phone[4] in ['1', '7']):
+                                    st.error(f"Invalid Kenyan phone format: {phone} (expected +2547xxxxxxxx or +2541xxxxxxxx)")
+                                    failed += 1
+                                    continue
                                 
                                 # Validate phone number
                                 if not (phone.startswith('+254') and len(phone) == 13):
