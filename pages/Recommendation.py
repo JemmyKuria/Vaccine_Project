@@ -113,37 +113,19 @@ class VaccineAnalyzer:
 
     @staticmethod
     def _analyze_barriers(df: pd.DataFrame) -> List[Dict]:
-        """
-        Detect barriers, create barrier profiles, produce per-profile messages.
-        Returns a list of dicts: each dict includes profile string, count, and message templates.
-        """
-
-        # Work on a copy
         df = df.copy()
-
-        # If predictions exist use them, otherwise fall back to labels if available
-        pred_col_h1 = 'h1n1_vaccine_pred' if 'h1n1_vaccine_pred' in df.columns else 'h1n1_label' if 'h1n1_label' in df.columns else None
-        pred_col_seas = 'seasonal_vaccine_pred' if 'seasonal_vaccine_pred' in df.columns else 'seasonal_label' if 'seasonal_label' in df.columns else None
-
-        # Focus on those predicted not to vaccinate for either vaccine (if preds available)
-        if pred_col_h1 and pred_col_seas:
-            df_target = df[(df[pred_col_h1] == 0) | (df[pred_col_seas] == 0)].copy()
-        elif pred_col_h1:
-            df_target = df[df[pred_col_h1] == 0].copy()
-        elif pred_col_seas:
-            df_target = df[df[pred_col_seas] == 0].copy()
+        # Focus on those predicted not to vaccinate
+        if 'h1n1_vaccine_pred' in df.columns and 'seasonal_vaccine_pred' in df.columns:
+            df_target = df[(df['h1n1_vaccine_pred'] == 0) | (df['seasonal_vaccine_pred'] == 0)].copy()
         else:
-            # if no prediction columns, consider entire df
             df_target = df.copy()
 
-        # Create barrier flags (safe defaults if columns missing)
+        # Create barrier flags
         df_target['barrier_no_insurance'] = df_target.get('health_insurance', pd.Series(0, index=df_target.index)).fillna(0).astype(float) == 0
         df_target['barrier_low_risk'] = df_target.get('opinion_h1n1_risk', pd.Series(3, index=df_target.index)).fillna(3) <= 2
         df_target['barrier_low_vaccine_belief'] = df_target.get('opinion_h1n1_vacc_effective', pd.Series(3, index=df_target.index)).fillna(3) <= 2
         df_target['barrier_low_knowledge'] = df_target.get('h1n1_knowledge', pd.Series(2, index=df_target.index)).fillna(2) <= 1
-        # behavioral_antiviral_meds often 0/1 — use as proxy for access/time
         df_target['barrier_access'] = df_target.get('behavioral_antiviral_meds', pd.Series(0, index=df_target.index)).fillna(0) == 0
-        # low safe behavior score if available
         df_target['barrier_low_behaviors'] = df_target.get('safe_behavior_score', pd.Series(10, index=df_target.index)).fillna(10) <= 2
 
         # Compose a readable profile label from flags
@@ -155,7 +137,7 @@ class VaccineAnalyzer:
             if row['barrier_low_knowledge']: parts.append("Low Knowledge")
             if row['barrier_access']: parts.append("Access/Time Issues")
             if row['barrier_low_behaviors']: parts.append("Low Safe Behaviors")
-            return " + ".join(parts) if parts else "No Major Barrier"
+            return " + ".join(sorted(parts)) if parts else "No Major Barrier"
 
         df_target['barrier_profile'] = df_target.apply(compose_profile, axis=1)
 
@@ -163,7 +145,7 @@ class VaccineAnalyzer:
         profile_counts = df_target['barrier_profile'].value_counts().reset_index()
         profile_counts.columns = ['barrier_profile', 'people_affected']
 
-        # Message templates per barrier (H1N1 and Seasonal)
+        # Message templates per barrier
         barrier_messages = {
             'No Insurance': {
                 'h1n1': "Hi {name}, the H1N1 vaccine is free for everyone. No insurance required — protect yourself today.",
@@ -195,18 +177,16 @@ class VaccineAnalyzer:
             }
         }
 
-        # Build output list: for each profile include message templates and a small sample
+        # Build output list
         profiles_output = []
         for _, row in profile_counts.iterrows():
             profile = row['barrier_profile']
             count = int(row['people_affected'])
 
-            # pick primary barrier (first part) to choose message (simple heuristic)
             primary = profile.split(' + ')[0] if profile != "No Major Barrier" else "No Major Barrier"
             if primary not in barrier_messages:
                 primary = "No Major Barrier"
 
-            # Create a few fake contacts for preview (3 samples)
             samples = []
             sample_rows = df_target[df_target['barrier_profile'] == profile].head(5)
             for _, r in sample_rows.iterrows():
@@ -222,11 +202,11 @@ class VaccineAnalyzer:
                 'h1n1_message': barrier_messages[primary]['h1n1'],
                 'seasonal_message': barrier_messages[primary]['seasonal'],
                 'samples': samples,
-                # priority heuristic
                 'priority': 'High' if primary in ['No Insurance', 'Low Vaccine Belief'] else 'Medium'
             })
 
         return profiles_output
+        
 
 # ---------------- Recommendation Engine ----------------
 class RecommendationEngine:
