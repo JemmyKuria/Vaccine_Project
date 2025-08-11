@@ -347,7 +347,7 @@ class Dashboard:
             st.info("No medical leverage points found.")
 
     @staticmethod
-     def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
+    def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
 
         # Verify required columns
