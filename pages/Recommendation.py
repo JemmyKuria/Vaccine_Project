@@ -362,23 +362,60 @@ class Dashboard:
         
         for idx, (key, details) in enumerate(barrier_recs.items()):
             with st.expander(f"Barrier {idx+1}: {details.get('insight', '')}"):
-                # [Previous message template code remains the same...]
-                
+                barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
+                st.markdown(f"**People affected (approx)**: {details.get('numeric_value', 0)}")
+
+                # Extract original messages
+                action_text = details.get('action', '')
+                h1_msg, s_msg = "", ""
+                if "H1N1:" in action_text and "Seasonal:" in action_text:
+                    try:
+                        h1_msg = action_text.split("H1N1: ")[1].split("\n\nSeasonal: ")[0].strip()
+                        s_msg = action_text.split("\n\nSeasonal: ")[1].strip()
+                    except:
+                        h1_msg = action_text
+                        s_msg = action_text
+                else:
+                    h1_msg = s_msg = action_text
+
+                # Editable message fields
+                if vaccine_type in ["H1N1", "Both"]:
+                    h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
+                if vaccine_type in ["Seasonal", "Both"]:
+                    s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
+
                 # Prepare messages to send
                 messages_to_send = []
                 if 'name' in df.columns and 'phone_number' in df.columns:
-                    num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
+                    num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1))
                     contacts_to_send = df[['name', 'phone_number']].head(num_messages)
                     
                     for _, row in contacts_to_send.iterrows():
-                        # [Message formatting code remains the same...]
+                        # Determine message text based on vaccine type
+                        if vaccine_type == "H1N1":
+                            msg_text = h1_msg.format(name=row['name']) if "{name}" in h1_msg else h1_msg
+                        elif vaccine_type == "Seasonal":
+                            msg_text = s_msg.format(name=row['name']) if "{name}" in s_msg else s_msg
+                        else:  # Both
+                            h1_text = h1_msg.format(name=row['name']) if "{name}" in h1_msg else h1_msg
+                            s_text = s_msg.format(name=row['name']) if "{name}" in s_msg else s_msg
+                            msg_text = f"{h1_text}\n\n{s_text}"
+                        
                         messages_to_send.append({
                             'to': row['phone_number'],
                             'name': row['name'],
                             'text': msg_text
                         })
 
-                # Enhanced sending function
+                # Display sample messages
+                if messages_to_send:
+                    st.markdown("**Sample Messages:**")
+                    sample_df = pd.DataFrame(messages_to_send[:3])  # Show first 3
+                    st.dataframe(sample_df)
+                else:
+                    st.warning("No valid contacts found with 'name' and 'phone_number' columns")
+
+                # Send messages button
                 if st.button(f"📤 Send Messages for {key}", key=f"send_{idx}"):
                     if not messages_to_send:
                         st.warning("No messages prepared to send.")
@@ -399,43 +436,38 @@ class Dashboard:
                                     failed += 1
                                     continue
                                 
-                                # Send message with error handling
-                                try:
-                                    response = sms.send(
-                                        message=m['text'],
-                                        recipients=[phone],
-                                        sender_id=sender_id
-                                    )
-                                    
-                                    # Parse response
-                                    if isinstance(response, dict) and 'SMSMessageData' in response:
-                                        recipients = response['SMSMessageData'].get('Recipients', [])
-                                        if recipients and isinstance(recipients, list):
-                                            status = recipients[0].get('status', 'Failed')
-                                            if status == "Success":
-                                                sent += 1
-                                            else:
-                                                error_msg = recipients[0].get('message', 'Unknown error')
-                                                st.error(f"Failed to {phone}: {error_msg}")
-                                                failed += 1
+                                # Send message
+                                response = sms.send(
+                                    message=m['text'],
+                                    recipients=[phone],
+                                    sender_id=sender_id
+                                )
+                                
+                                # Check response
+                                if isinstance(response, dict) and 'SMSMessageData' in response:
+                                    if response['SMSMessageData'].get('Recipients'):
+                                        status = response['SMSMessageData']['Recipients'][0].get('status', 'Failed')
+                                        if status == "Success":
+                                            sent += 1
                                         else:
-                                            st.error(f"Unexpected recipients format for {phone}")
+                                            error_msg = response['SMSMessageData']['Recipients'][0].get('message', 'Unknown error')
+                                            st.error(f"Failed to send to {phone}: {error_msg}")
                                             failed += 1
                                     else:
-                                        st.error(f"Invalid API response for {phone}")
+                                        st.error(f"Unexpected response format for {phone}")
                                         failed += 1
-                                        
-                                except Exception as api_error:
+                                else:
+                                    st.error(f"Invalid API response for {phone}")
                                     failed += 1
-                                    st.error(f"API Error for {phone}: {str(api_error)}")
                                     
                             except Exception as e:
                                 failed += 1
-                                st.error(f"Processing error for {m.get('to')}: {str(e)}")
+                                st.error(f"Error sending to {phone}: {str(e)}")
 
                         st.success(f"✅ Sent: {sent} messages")
                         if failed > 0:
                             st.error(f"❌ Failed: {failed} messages")
+        
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
         st.header("Complete Analysis Report")
