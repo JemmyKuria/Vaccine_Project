@@ -206,7 +206,6 @@ class VaccineAnalyzer:
             })
 
         return profiles_output
-        
 
 # ---------------- Recommendation Engine ----------------
 class RecommendationEngine:
