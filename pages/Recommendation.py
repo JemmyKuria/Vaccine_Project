@@ -19,15 +19,12 @@ def configure_page():
     st.title("🤖 AI-Powered Vaccine Recommendations")
     st.markdown("""
     <style>
-    .stProgress > div > div > div > div {
-        background-color: #1f77b4;
-    }
+    .stProgress > div > div > div > div 
+        
     .st-b7 {
         color: white;
     }
-    .st-c0 {
-        background-color: #1f77b4;
-    }
+    
     </style>
     """, unsafe_allow_html=True)
 
