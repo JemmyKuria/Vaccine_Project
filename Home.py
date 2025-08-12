@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import matplotlib.pyplot as plt
-from pipeline import preprocess, predict 
-from PIL import Image
+from pipeline import preprocess, predict
 
 # Page Configuration
 st.set_page_config(
@@ -12,9 +10,15 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
+# =========================
+# Custom CSS Styling
+# =========================
 st.markdown("""
 <style>
+    /* General Page Styling */
+    .main {
+        background-color: #f4f9f9;
+    }
     .header {
         background-color: #008080;
         color: white;
@@ -28,7 +32,7 @@ st.markdown("""
         border-radius: 10px;
         padding: 1.5rem;
         margin-bottom: 1rem;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.08);
     }
     .step-card {
         background-color: #e0f7fa;
@@ -50,10 +54,26 @@ st.markdown("""
         padding: 1.5rem;
         margin: 1rem 0;
     }
+    /* Teal Button Styling */
+    .stButton > button {
+        background-color: #008080 !important;
+        color: white !important;
+        border-radius: 8px !important;
+        padding: 0.6rem 1.2rem !important;
+        font-weight: bold !important;
+        border: none !important;
+        transition: background-color 0.3s ease;
+    }
+    .stButton > button:hover {
+        background-color: #006666 !important;
+        color: white !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
+# =========================
 # Header
+# =========================
 st.markdown("""
 <div class="header">
     <h1>Vaccine Campaign Optimizer</h1>
@@ -61,7 +81,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# =========================
 # About Section
+# =========================
 st.markdown("""
 <div class="card">
     <h2>About This Tool</h2>
@@ -69,7 +91,9 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Steps in cards
+# =========================
+# How It Works Section
+# =========================
 st.markdown("""
 <div class="card">
     <h2>How It Works</h2>
@@ -91,10 +115,13 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# =========================
 # File Upload Section
+# =========================
 st.markdown("""
 <div class="card">
     <h2>Upload Your Data</h2>
+</div>
 """, unsafe_allow_html=True)
 
 uploaded = st.file_uploader("Choose survey data file (CSV format)", type=["csv"],
@@ -107,23 +134,26 @@ if uploaded is None:
 df_raw = pd.read_csv(uploaded)
 st.success(f"✅ Successfully loaded {len(df_raw)} survey responses")
 
-# Data preview
+# =========================
+# Data Preview
+# =========================
 st.markdown("""
 <div class="card">
     <h3>Data Preview</h3>
+</div>
 """, unsafe_allow_html=True)
 st.dataframe(df_raw.head())
 
+# =========================
 # Analysis Section
+# =========================
 st.markdown("""
 <div class="card">
     <h2>Generate Predictions</h2>
+</div>
 """, unsafe_allow_html=True)
 
-if st.button("Analyze Vaccination Likelihood", type="primary", 
-            use_container_width=True,
-            help="Process the data and generate predictions"):
-    
+if st.button("Analyze Vaccination Likelihood", use_container_width=True):
     with st.spinner("Analyzing data... This may take a moment"):
         # Clean and predict
         df_clean = preprocess(df_raw.copy())
@@ -139,7 +169,9 @@ if st.button("Analyze Vaccination Likelihood", type="primary",
         st.balloons()
         st.success("Analysis complete! Visit the Recommendations page for campaign strategies.")
         
+        # =========================
         # Metrics
+        # =========================
         total = len(results)
         h1_vax_pct = results["h1n1_label"].mean() * 100
         seas_vax_pct = results["seasonal_label"].mean() * 100
@@ -147,6 +179,7 @@ if st.button("Analyze Vaccination Likelihood", type="primary",
         st.markdown("""
         <div class="highlight-box">
             <h3>Results Summary</h3>
+        </div>
         """, unsafe_allow_html=True)
         
         col1, col2, col3 = st.columns(3)
@@ -174,61 +207,47 @@ if st.button("Analyze Vaccination Likelihood", type="primary",
                 <h2>{seas_vax_pct:.1f}%</h2>
             </div>
             """, unsafe_allow_html=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)  # Close highlight-box
 
+        # =========================
         # Visualization
+        # =========================
         st.markdown("""
         <div class="card">
             <h3>Vaccination Likelihood Distribution</h3>
+        </div>
         """, unsafe_allow_html=True)
         
-        # Matplotlib pie charts
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
         
         # H1N1 pie chart
-        ax[0].pie([h1_vax_pct, 100-h1_vax_pct], 
-                 labels=["Likely", "Unlikely"], 
-                 autopct='%1.1f%%',
-                 startangle=90,
-                 colors=['#4dd0e1', '#80deea'],
-                 explode=(0.1, 0),
-                 textprops={'fontsize': 10})
+        ax[0].pie(
+            [h1_vax_pct, 100 - h1_vax_pct], 
+            labels=["Likely", "Unlikely"], 
+            autopct='%1.1f%%',
+            startangle=90,
+            colors=['#4CAF50', '#FFA500'],  # ✅ green & orange
+            explode=(0.1, 0),
+            textprops={'fontsize': 10}
+        )
         ax[0].set_title("H1N1 Vaccination", fontweight='bold')
         
         # Seasonal pie chart
-        ax[1].pie([seas_vax_pct, 100-seas_vax_pct], 
-                  labels=["Likely", "Unlikely"], 
-                  autopct='%1.1f%%',
-                  startangle=90,
-                  colors=['#26c6da', '#b2ebf2'],
-                  explode=(0.1, 0),
-                  textprops={'fontsize': 10})
+        ax[1].pie(
+            [seas_vax_pct, 100 - seas_vax_pct], 
+            labels=["Likely", "Unlikely"], 
+            autopct='%1.1f%%',
+            startangle=90,
+            colors=['#4CAF50', '#FFA500'],  # ✅ same scheme
+            explode=(0.1, 0),
+            textprops={'fontsize': 10}
+        )
         ax[1].set_title("Seasonal Vaccination", fontweight='bold')
         
         st.pyplot(fig)
-        
-        # Plotly interactive chart
-        fig = px.bar(
-            x=["H1N1 Vaccine", "Seasonal Vaccine"],
-            y=[h1_vax_pct, seas_vax_pct],
-            color=["H1N1 Vaccine", "Seasonal Vaccine"],
-            color_discrete_sequence=["#008080", "#4dd0e1"],
-            labels={'x': 'Vaccine Type', 'y': 'Likelihood (%)'},
-            text=[f"{h1_vax_pct:.1f}%", f"{seas_vax_pct:.1f}%"],
-            height=400
-        )
-        fig.update_traces(textposition='outside')
-        fig.update_layout(
-            title="Vaccination Likelihood Comparison",
-            showlegend=False,
-            yaxis_range=[0, 100]
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        
-        st.markdown("</div>", unsafe_allow_html=True)  # Close card
-        
+
+        # =========================
         # Recommendation prompt
+        # =========================
         st.markdown("""
         <div class="highlight-box">
             <h3>Ready for Campaign Recommendations?</h3>
