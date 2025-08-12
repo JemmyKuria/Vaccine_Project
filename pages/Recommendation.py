@@ -417,7 +417,16 @@ class Dashboard:
                     st.table(sample_contacts)
                 else:
                     st.warning("No contact data available (need 'name' and 'phone_number' columns)")
-
+                def format_to_e164(phone):
+                    phone = str(phone).strip().replace(" ", "").replace("-", "")
+                    if phone.startswith("+254"):
+                        return phone
+                    elif phone.startswith("0"):
+                        return "+254" + phone[1:]
+                    elif phone.startswith("7"):
+                        return "+254" + phone
+                    else:
+                        raise ValueError(f"Invalid phone number format: {phone}")
                 # Apply to your dataframe before sending
                 df['phone_number'] = df['phone_number'].apply(format_to_e164)
 
