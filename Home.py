@@ -34,17 +34,39 @@ st.markdown("""
         margin-bottom: 1rem;
         box-shadow: 0 4px 8px rgba(0,0,0,0.08);
     }
+    .step-container {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
     .step-card {
         background-color: #e0f7fa;
         border-left: 4px solid #008080;
         border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        padding: 1.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .step-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+    }
+    .step-number {
+        background-color: #008080;
+        color: white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 12px;
+        font-weight: bold;
     }
     .metric-card {
         background-color: white;
         border-radius: 10px;
-        padding: 1rem;
+        padding: 1.5rem;
         text-align: center;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
@@ -97,20 +119,30 @@ st.markdown("""
 st.markdown("""
 <div class="card">
     <h2>How It Works</h2>
-    
-    <div class="step-card">
-        <h3>1. Upload Survey Data</h3>
-        <p>Provide your CSV file containing survey responses from the target population.</p>
-    </div>
-    
-    <div class="step-card">
-        <h3>2. Analyze Predictions</h3>
-        <p>Our system processes the data to predict vaccination likelihood.</p>
-    </div>
-    
-    <div class="step-card">
-        <h3>3. Explore Recommendations</h3>
-        <p>Get targeted campaign strategies based on the analysis.</p>
+    <div class="step-container">
+        <div class="step-card">
+            <div style="display: flex; align-items: center;">
+                <span class="step-number">1</span>
+                <h3 style="margin: 0;">Upload Survey Data</h3>
+            </div>
+            <p style="margin-top: 0.5rem; margin-left: 40px;">Provide your CSV file containing survey responses from the target population.</p>
+        </div>
+        
+        <div class="step-card">
+            <div style="display: flex; align-items: center;">
+                <span class="step-number">2</span>
+                <h3 style="margin: 0;">Analyze Predictions</h3>
+            </div>
+            <p style="margin-top: 0.5rem; margin-left: 40px;">Our system processes the data to predict vaccination likelihood.</p>
+        </div>
+        
+        <div class="step-card">
+            <div style="display: flex; align-items: center;">
+                <span class="step-number">3</span>
+                <h3 style="margin: 0;">Explore Recommendations</h3>
+            </div>
+            <p style="margin-top: 0.5rem; margin-left: 40px;">Get targeted campaign strategies based on the analysis.</p>
+        </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
@@ -219,15 +251,8 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
         
-        # Define professional color palettes
-        # Option 1: Teal theme (matches your app's primary color)
-        teal_colors = ['#008080', '#B0E0E6']  # Teal and Light Blue
-        
-        # Option 2: Modern blue/gray theme
-        # modern_colors = ['#2E86AB', '#A23B72']  # Blue and Muted Pink
-        
-        # Option 3: Professional green/blue theme
-        # professional_colors = ['#16537e', '#86C5D8']  # Navy Blue and Sky Blue
+        # Define color palette
+        teal_colors = ['#008080', '#B0E0E6']
         
         # H1N1 pie chart
         ax[0].pie(
@@ -236,9 +261,9 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
             autopct='%1.1f%%',
             startangle=90,
             colors=teal_colors,
-            explode=(0.05, 0),  # Slightly smaller explode for cleaner look
+            explode=(0.05, 0),
             textprops={'fontsize': 11, 'fontweight': 'bold'},
-            wedgeprops={'linewidth': 2, 'edgecolor': 'white'}  # Clean white borders
+            wedgeprops={'linewidth': 2, 'edgecolor': 'white'}
         )
         ax[0].set_title("H1N1 Vaccination", fontweight='bold', fontsize=14, pad=20)
         
@@ -249,13 +274,12 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
             autopct='%1.1f%%',
             startangle=90,
             colors=teal_colors,
-            explode=(0.05, 0),  # Slightly smaller explode for cleaner look
+            explode=(0.05, 0),
             textprops={'fontsize': 11, 'fontweight': 'bold'},
-            wedgeprops={'linewidth': 2, 'edgecolor': 'white'}  # Clean white borders
+            wedgeprops={'linewidth': 2, 'edgecolor': 'white'}
         )
         ax[1].set_title("Seasonal Vaccination", fontweight='bold', fontsize=14, pad=20)
         
-        # Improve overall figure appearance
         plt.tight_layout()
         fig.patch.set_facecolor('white')
         
