@@ -31,29 +31,20 @@ st.markdown("""
         background-color: white;
         border-radius: 10px;
         padding: 1.5rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-    }
-    .steps-container {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-top: 1rem;
-    }
-    
-    .steps-container {
-        display: flex;
-        justify-content: space-between;
-        gap: 1rem;
-        margin-top: 1rem;
     }
     .step-card {
         background-color: #e0f7fa;
         border-left: 4px solid #008080;
         border-radius: 8px;
         padding: 1.5rem;
-        flex: 1;
-        min-width: 0;
+        height: 100%;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .step-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
     .step-number {
         background-color: #008080;
@@ -67,24 +58,24 @@ st.markdown("""
         margin-right: 12px;
         font-weight: bold;
     }
-    @media (max-width: 768px) {
-        .steps-container {
-            flex-direction: column;
-        }
-    }
-
     .metric-card {
         background-color: white;
         border-radius: 10px;
         padding: 1.5rem;
         text-align: center;
         box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        height: 100%;
+    }
+    .metric-card h2 {
+        color: #008080;
+        margin-top: 0.5rem;
     }
     .highlight-box {
         background-color: #e0f7fa;
         border-radius: 10px;
         padding: 1.5rem;
-        margin: 1rem 0;
+        margin: 1.5rem 0;
+        border-left: 4px solid #008080;
     }
     /* Teal Button Styling */
     .stButton > button {
@@ -94,17 +85,24 @@ st.markdown("""
         padding: 0.6rem 1.2rem !important;
         font-weight: bold !important;
         border: none !important;
-        transition: background-color 0.3s ease;
+        transition: all 0.3s ease !important;
     }
     .stButton > button:hover {
         background-color: #006666 !important;
-        color: white !important;
+        transform: scale(1.02);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
     }
-    
-    @media (max-width: 768px) {
-        .steps-container {
-            flex-direction: column;
-        }
+    .section-title {
+        color: #008080;
+        border-bottom: 2px solid #008080;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .data-preview {
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -115,7 +113,7 @@ st.markdown("""
 st.markdown("""
 <div class="header">
     <h1>Vaccine Campaign Optimizer</h1>
-    <p>Data-driven strategies for public health officials</p>
+    <p>Maximize vaccination rates through data-driven outreach strategies</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -124,8 +122,20 @@ st.markdown("""
 # =========================
 st.markdown("""
 <div class="card">
-    <h2>About This Tool</h2>
-    <p>This application helps public health officials and vaccine campaign managers optimize their outreach efforts through data analysis.</p>
+    <h2 class="section-title">About This Tool</h2>
+    <p>This application helps public health officials and vaccine campaign managers optimize their outreach efforts through advanced data analysis and machine learning.</p>
+    
+    <div class="highlight-box">
+        <h4>Key Features:</h4>
+        <ul>
+            <li>Predict vaccination likelihood for different demographic groups</li>
+            <li>Identify key factors influencing vaccine acceptance</li>
+            <li>Generate targeted outreach recommendations</li>
+            <li>Visualize campaign performance metrics</li>
+        </ul>
+    </div>
+    
+    <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates while reducing campaign costs.</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -133,22 +143,20 @@ st.markdown("""
 # How It Works Section
 # =========================
 st.markdown("""
-<div class="card">
-    <h2>How It Works</h2>
-</div>
+<h2 class="section-title">How It Works</h2>
 """, unsafe_allow_html=True)
 
 # Create columns for the step cards
-col1, col2, col3 = st.columns(3)
+col1, col2, col3 = st.columns(3, gap="large")
 
 with col1:
     st.markdown("""
     <div class="step-card">
         <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
             <span class="step-number">1</span>
-            <h3 style="margin: 0;">Upload</h3>
+            <h3 style="margin: 0;">Upload Data</h3>
         </div>
-        <p style="margin: 0;">Provide your CSV file containing survey responses</p>
+        <p style="margin: 0;">Simply upload your CSV file containing survey responses. Our system accepts standard demographic and behavioral survey data.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -157,9 +165,9 @@ with col2:
     <div class="step-card">
         <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
             <span class="step-number">2</span>
-            <h3 style="margin: 0;">Analyze</h3>
+            <h3 style="margin: 0;">Advanced Analysis</h3>
         </div>
-        <p style="margin: 0;">Our system processes vaccination likelihood</p>
+        <p style="margin: 0;">Our machine learning models process the data to predict vaccination likelihood and identify key influencing factors.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -168,9 +176,9 @@ with col3:
     <div class="step-card">
         <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
             <span class="step-number">3</span>
-            <h3 style="margin: 0;">Recommend</h3>
+            <h3 style="margin: 0;">Actionable Insights</h3>
         </div>
-        <p style="margin: 0;">Get targeted campaign strategies</p>
+        <p style="margin: 0;">Receive targeted campaign strategies tailored to your specific population segments for maximum effectiveness.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -179,15 +187,16 @@ with col3:
 # =========================
 st.markdown("""
 <div class="card">
-    <h2>Upload Your Data</h2>
+    <h2 class="section-title">Upload Your Data</h2>
+    <p>To begin your analysis, upload your survey data in CSV format. Ensure your file includes demographic information and relevant survey responses.</p>
 </div>
 """, unsafe_allow_html=True)
 
 uploaded = st.file_uploader("Choose survey data file (CSV format)", type=["csv"],
-                           help="Upload your CSV file containing survey responses")
+                          help="Upload your CSV file containing demographic and survey response data")
 
 if uploaded is None:
-    st.info("Please upload your survey data to begin analysis")
+    st.info("ℹ️ Please upload your survey data to begin analysis. Sample data format: age, gender, education level, health conditions, etc.")
     st.stop()
 
 df_raw = pd.read_csv(uploaded)
@@ -198,22 +207,26 @@ st.success(f"✅ Successfully loaded {len(df_raw)} survey responses")
 # =========================
 st.markdown("""
 <div class="card">
-    <h3>Data Preview</h3>
+    <h3 class="section-title">Data Preview</h3>
+    <p>Here's a preview of your uploaded data. Ensure all relevant columns are properly formatted.</p>
 </div>
 """, unsafe_allow_html=True)
-st.dataframe(df_raw.head())
+
+st.dataframe(df_raw.head().style.set_properties(**{'background-color': '#f8f9fa', 
+                                                 'border': '1px solid #e0e0e0'}))
 
 # =========================
 # Analysis Section
 # =========================
 st.markdown("""
 <div class="card">
-    <h2>Generate Predictions</h2>
+    <h2 class="section-title">Generate Predictions</h2>
+    <p>Click the button below to analyze your data and generate vaccination likelihood predictions. This process may take a few moments depending on your dataset size.</p>
 </div>
 """, unsafe_allow_html=True)
 
 if st.button("Analyze Vaccination Likelihood", use_container_width=True):
-    with st.spinner("Analyzing data... This may take a moment"):
+    with st.spinner("🔍 Analyzing data... This may take a moment for larger datasets"):
         # Clean and predict
         df_clean = preprocess(df_raw.copy())
         h1n1_label, seasonal_label = predict(df_clean)
@@ -226,7 +239,7 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         
         # Success message
         st.balloons()
-        st.success("Analysis complete! Visit the Recommendations page for campaign strategies.")
+        st.success("🎉 Analysis complete! Visit the Recommendations page for detailed campaign strategies.")
         
         # =========================
         # Metrics
@@ -238,16 +251,18 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         st.markdown("""
         <div class="highlight-box">
             <h3>Results Summary</h3>
+            <p>Key metrics from your vaccination likelihood analysis:</p>
         </div>
         """, unsafe_allow_html=True)
         
-        col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns(3, gap="large")
         
         with col1:
             st.markdown(f"""
             <div class="metric-card">
                 <h4>Total Respondents</h4>
                 <h2>{total:,}</h2>
+                <p>individuals in your dataset</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -256,6 +271,7 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
             <div class="metric-card">
                 <h4>H1N1 Vaccine Likely</h4>
                 <h2>{h1_vax_pct:.1f}%</h2>
+                <p>predicted acceptance rate</p>
             </div>
             """, unsafe_allow_html=True)
         
@@ -264,6 +280,7 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
             <div class="metric-card">
                 <h4>Seasonal Vaccine Likely</h4>
                 <h2>{seas_vax_pct:.1f}%</h2>
+                <p>predicted acceptance rate</p>
             </div>
             """, unsafe_allow_html=True)
 
@@ -272,7 +289,8 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         # =========================
         st.markdown("""
         <div class="card">
-            <h3>Vaccination Likelihood Distribution</h3>
+            <h3 class="section-title">Vaccination Likelihood Distribution</h3>
+            <p>Visual representation of predicted vaccination acceptance rates</p>
         </div>
         """, unsafe_allow_html=True)
         
@@ -318,6 +336,13 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         st.markdown("""
         <div class="highlight-box">
             <h3>Ready for Campaign Recommendations?</h3>
-            <p>Visit the Recommendations page to see targeted strategies based on this analysis.</p>
+            <p>Our analysis has identified key patterns in your data. Visit the Recommendations page to see targeted outreach strategies tailored to your specific population segments.</p>
+            <p>You'll receive guidance on:</p>
+            <ul>
+                <li>Which demographic groups to prioritize</li>
+                <li>Effective messaging approaches</li>
+                <li>Optimal communication channels</li>
+                <li>Resource allocation strategies</li>
+            </ul>
         </div>
         """, unsafe_allow_html=True)
