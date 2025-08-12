@@ -327,7 +327,20 @@ class RecommendationEngine:
     def _generate_barrier_recommendations(analysis: Dict) -> Dict:
         recommendations = {}
         barrier_profiles = analysis.get('barrier_profiles', [])
+        
+        # Debugging: Print the structure of barrier_profiles
+        st.write("Barrier Profiles Structure:")
+        st.write(barrier_profiles)
+
         for i, prof in enumerate(barrier_profiles[:500]):  # limit for display/export
+            # Debugging: Print the structure of prof
+            st.write(f"Profile {i} Structure:")
+            st.write(prof)
+
+            if not isinstance(prof, dict):
+                st.error(f"Expected a dictionary but got {type(prof)} at index {i}")
+                continue
+
             key = f"Barrier Profile: {prof['barrier_profile']}"
             recommendations[key] = {
                 "insight": f"{prof['people_affected']} people with primary barrier: {prof['primary_barrier']}",
