@@ -451,8 +451,7 @@ class Dashboard:
             )
             st.plotly_chart(fig, use_container_width=True)
 
-        with st.expander("📊 Full analysis JSON"):
-            st.json(analysis)
+        
 
     @staticmethod
     def setup_export(analysis: Dict, recommendations: Dict):
