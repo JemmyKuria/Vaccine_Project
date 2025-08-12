@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from typing import Dict, List, Optional
-from faker import Faker
 import africastalking
 from twilio.rest import Client
 
@@ -14,8 +13,6 @@ from_number = st.secrets["twilio"]["from_number"]
 # Initialize Twilio client
 client = Client(account_sid, auth_token)
 
-# Initialize Faker
-fake = Faker()
 
 
 # ---------------- Page Configuration ----------------
@@ -117,7 +114,7 @@ class VaccineAnalyzer:
                 factors[col] = float(effect_size)
         return factors
 
-    @staticmethod
+   @staticmethod
     def _analyze_barriers(df: pd.DataFrame) -> List[Dict]:
         df = df.copy()
         # Focus on those predicted not to vaccinate
@@ -133,23 +130,6 @@ class VaccineAnalyzer:
         df_target['barrier_low_knowledge'] = df_target.get('h1n1_knowledge', pd.Series(2, index=df_target.index)).fillna(2) <= 1
         df_target['barrier_access'] = df_target.get('behavioral_antiviral_meds', pd.Series(0, index=df_target.index)).fillna(0) == 0
         df_target['barrier_low_behaviors'] = df_target.get('safe_behavior_score', pd.Series(10, index=df_target.index)).fillna(10) <= 2
-
-        # Compose a readable profile label from flags
-        def compose_profile(row):
-            parts = []
-            if row['barrier_no_insurance']: parts.append("No Insurance")
-            if row['barrier_low_vaccine_belief']: parts.append("Low Vaccine Belief")
-            if row['barrier_low_risk']: parts.append("Low Risk Perception")
-            if row['barrier_low_knowledge']: parts.append("Low Knowledge")
-            if row['barrier_access']: parts.append("Access/Time Issues")
-            if row['barrier_low_behaviors']: parts.append("Low Safe Behaviors")
-            return " + ".join(sorted(parts)) if parts else "No Major Barrier"
-
-        df_target['barrier_profile'] = df_target.apply(compose_profile, axis=1)
-
-        # Count profiles
-        profile_counts = df_target['barrier_profile'].value_counts().reset_index()
-        profile_counts.columns = ['barrier_profile', 'people_affected']
 
         # Message templates per barrier
         barrier_messages = {
@@ -180,54 +160,105 @@ class VaccineAnalyzer:
             'No Major Barrier': {
                 'h1n1': "Hi {name}, getting vaccinated helps protect you and your community. Find your nearest clinic today.",
                 'seasonal': "Hi {name}, getting the seasonal vaccine is a simple step to stay healthy — visit your local clinic."
+            },
+            'Multiple Barriers': {
+                'h1n1': "Hi {name}, we understand you might have concerns because: {barrier_list}.\n\nHere's what you should know:\n{combined_advice}",
+                'seasonal': "Hi {name}, we notice several factors may affect your decision: {barrier_list}.\n\nConsider this:\n{combined_advice}"
+            },
+            'advice_snippets': {
+                'No Insurance': "• Completely free at public health centers (no insurance needed)",
+                'Low Risk Perception': "• Healthy people can still get severely ill",
+                'Low Vaccine Belief': "• Reduces hospitalization risk by 40-60%",
+                'Low Knowledge': "• Protection starts within 2 weeks",
+                'Access/Time Issues': "• Walk-ins available in under 15 minutes",
+                'Low Safe Behaviors': "• More effective than hand-washing alone"
             }
         }
+
+        def get_profile_info(row):
+            barriers = []
+            if row['barrier_no_insurance']: barriers.append("No Insurance")
+            if row['barrier_low_vaccine_belief']: barriers.append("Low Vaccine Belief")
+            if row['barrier_low_risk']: barriers.append("Low Risk Perception")
+            if row['barrier_low_knowledge']: barriers.append("Low Knowledge")
+            if row['barrier_access']: barriers.append("Access/Time Issues")
+            if row['barrier_low_behaviors']: barriers.append("Low Safe Behaviors")
+            
+            if not barriers:
+                return {
+                    'barrier_profile': "No Major Barrier",
+                    'primary_barrier': "No Major Barrier",
+                    'barrier_list': "",
+                    'combined_advice': ""
+                }
+            
+            if len(barriers) == 1:
+                return {
+                    'barrier_profile': barriers[0],
+                    'primary_barrier': barriers[0],
+                    'barrier_list': "",
+                    'combined_advice': ""
+                }
+            
+            advice_pieces = [barrier_messages['advice_snippets'][b] for b in barriers]
+            return {
+                'barrier_profile': " + ".join(barriers),
+                'primary_barrier': "Multiple Barriers",
+                'barrier_list': ", ".join(barriers[:-1]) + " and " + barriers[-1],
+                'combined_advice': "\n".join(advice_pieces)
+            }
+
+        # Apply profile composition
+        profile_info = df_target.apply(get_profile_info, axis=1, result_type='expand')
+        df_target = pd.concat([df_target, profile_info], axis=1)
+
+        # Count profiles
+        profile_counts = df_target['barrier_profile'].value_counts().reset_index()
+        profile_counts.columns = ['barrier_profile', 'people_affected']
 
         # Build output list
         profiles_output = []
         seen_profiles = set()
+        
         for _, row in profile_counts.iterrows():
             profile = row['barrier_profile']
             count = int(row['people_affected'])
 
-            # Ensure unique profiles
             if profile in seen_profiles:
                 continue
             seen_profiles.add(profile)
 
-            primary = profile.split(' + ')[0] if profile != "No Major Barrier" else "No Major Barrier"
             
+            # Get the first row's profile info for this profile
+            profile_info = df_target[df_target['barrier_profile'] == profile].iloc[0]
 
-            # Ensure primary barrier safely maps to our dictionary
-            if profile and profile != "No Major Barrier":
-                primary = profile.split(' + ')[0]
+            # Create message based on barrier type
+            if profile_info['primary_barrier'] == "Multiple Barriers":
+                h1n1_msg = barrier_messages['Multiple Barriers']['h1n1'].format(
+                    name="{name}",
+                    barrier_list=profile_info['barrier_list'],
+                    combined_advice=profile_info['combined_advice']
+                )
+                seasonal_msg = barrier_messages['Multiple Barriers']['seasonal'].format(
+                    name="{name}",
+                    barrier_list=profile_info['barrier_list'],
+                    combined_advice=profile_info['combined_advice']
+                )
             else:
-                primary = "No Major Barrier"
-
-            if primary not in barrier_messages:
-                primary = "No Major Barrier"
-
-
-            samples = []
-            sample_rows = df_target[df_target['barrier_profile'] == profile].head(5)
-            for _, r in sample_rows.iterrows():
-                samples.append({
-                    'fake_name': fake.first_name(),
-                    'fake_phone': fake.phone_number()
-                })
+                h1n1_msg = barrier_messages[profile_info['primary_barrier']]['h1n1']
+                seasonal_msg = barrier_messages[profile_info['primary_barrier']]['seasonal']
 
             profiles_output.append({
                 'barrier_profile': profile,
                 'people_affected': count,
-                'primary_barrier': primary,
-                'h1n1_message': barrier_messages[primary]['h1n1'],
-                'seasonal_message': barrier_messages[primary]['seasonal'],
+                'primary_barrier': profile_info['primary_barrier'],
+                'h1n1_message': h1n1_msg,
+                'seasonal_message': seasonal_msg,
                 'samples': samples,
-                'priority': 'High' if primary in ['No Insurance', 'Low Vaccine Belief'] else 'Medium'
+                'priority': 'High' if any(b in profile for b in ['No Insurance', 'Low Vaccine Belief']) else 'Medium'
             })
 
         return profiles_output
-
 # ---------------- Recommendation Engine ----------------
 class RecommendationEngine:
     @staticmethod
