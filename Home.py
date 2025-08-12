@@ -137,20 +137,6 @@ with st.container():
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Visualization
-            st.markdown("#### Vaccination Distribution")
-            fig = px.pie(
-                names=["H1N1 Likely", "H1N1 Unlikely", "Seasonal Likely", "Seasonal Unlikely"],
-                values=[h1_vax_pct, 100-h1_vax_pct, seas_vax_pct, 100-seas_vax_pct],
-                color_discrete_sequence=["#81c784", "#ff8a65", "#66bb6a", "#ff7043"],
-                hole=0.4,
-                height=400
-            )
-            st.plotly_chart(fig, use_container_width=True)
-
-
-
-
 
 
       # Display summary metrics with charts
