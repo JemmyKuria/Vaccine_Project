@@ -1,7 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
+from faker import Faker
 import africastalking
 from twilio.rest import Client
 
@@ -13,7 +14,15 @@ from_number = st.secrets["twilio"]["from_number"]
 # Initialize Twilio client
 client = Client(account_sid, auth_token)
 
+# Initialize Africa's Talking
+username = st.secrets["africastalking"]["username"]
+api_key = st.secrets["africastalking"]["api_key"]
+sender_id = st.secrets["africastalking"]["sender_id"]
+africastalking.initialize(username, api_key)
+sms = africastalking.SMS
 
+# Initialize Faker
+fake = Faker()
 
 # ---------------- Page Configuration ----------------
 def configure_page():
@@ -29,7 +38,8 @@ class VaccineAnalyzer:
             'high_risk_groups': {},
             'behavior_factors': {},
             'medical_factors': {},
-            'barrier_profiles': []   # list of dicts with messages and profile info
+            'barrier_profiles': [],   # list of dicts with messages and profile info
+            'barrier_df': None        # store the filtered dataframe
         }
 
         # Ensure string columns are strings (safe)
@@ -49,7 +59,7 @@ class VaccineAnalyzer:
         analysis['medical_factors'] = VaccineAnalyzer._analyze_medical_factors(df, medical_cols)
 
         # 4. Barriers and messaging
-        analysis['barrier_profiles'] = VaccineAnalyzer._analyze_barriers(df)
+        analysis['barrier_profiles'], analysis['barrier_df'] = VaccineAnalyzer._analyze_barriers(df)
 
         return analysis
 
@@ -115,7 +125,7 @@ class VaccineAnalyzer:
         return factors
 
     @staticmethod
-    def _analyze_barriers(df: pd.DataFrame) -> List[Dict]:
+    def _analyze_barriers(df: pd.DataFrame) -> Tuple[List[Dict], pd.DataFrame]:
         df = df.copy()
         # Focus on those predicted not to vaccinate
         if 'h1n1_vaccine_pred' in df.columns and 'seasonal_vaccine_pred' in df.columns:
@@ -228,7 +238,6 @@ class VaccineAnalyzer:
                 continue
             seen_profiles.add(profile)
 
-            
             # Get the first row's profile info for this profile
             profile_info = df_target[df_target['barrier_profile'] == profile].iloc[0]
 
@@ -257,7 +266,8 @@ class VaccineAnalyzer:
                 'priority': 'High' if any(b in profile for b in ['No Insurance', 'Low Vaccine Belief']) else 'Medium'
             })
 
-        return profiles_output, df_target 
+        return profiles_output, df_target
+
 # ---------------- Recommendation Engine ----------------
 class RecommendationEngine:
     @staticmethod
@@ -322,32 +332,32 @@ class RecommendationEngine:
                 continue
         return recommendations
 
-
     @staticmethod
     def _generate_barrier_recommendations(analysis: Dict) -> Dict:
         recommendations = {}
         barrier_profiles = analysis.get('barrier_profiles', [])
         
-        # Debugging: Print the structure of barrier_profiles
-        st.write("Barrier Profiles Structure:")
-        st.write(barrier_profiles)
+        if not barrier_profiles:
+            st.warning("No barrier profiles found in analysis")
+            return recommendations
 
         for i, prof in enumerate(barrier_profiles[:500]):  # limit for display/export
-            # Debugging: Print the structure of prof
-            st.write(f"Profile {i} Structure:")
-            st.write(prof)
-
             if not isinstance(prof, dict):
-                st.error(f"Expected a dictionary but got {type(prof)} at index {i}")
+                st.error(f"Invalid profile format at index {i}")
                 continue
 
-            key = f"Barrier Profile: {prof['barrier_profile']}"
-            recommendations[key] = {
-                "insight": f"{prof['people_affected']} people with primary barrier: {prof['primary_barrier']}",
-                "numeric_value": prof['people_affected'],
-                "action": f"H1N1: {prof['h1n1_message']}\n\nSeasonal: {prof['seasonal_message']}",
-                "priority": prof['priority']
-            }
+            try:
+                key = f"Barrier Profile: {prof.get('barrier_profile', 'Unknown')}"
+                recommendations[key] = {
+                    "insight": f"{prof.get('people_affected', 0)} people with primary barrier: {prof.get('primary_barrier', 'Unknown')}",
+                    "numeric_value": prof.get('people_affected', 0),
+                    "action": f"H1N1: {prof.get('h1n1_message', '')}\n\nSeasonal: {prof.get('seasonal_message', '')}",
+                    "priority": prof.get('priority', 'Medium')
+                }
+            except Exception as e:
+                st.error(f"Error processing barrier profile {i}: {str(e)}")
+                continue
+
         return recommendations
 
 # ---------------- Dashboard Components ----------------
@@ -403,7 +413,7 @@ class Dashboard:
             st.info("No medical leverage points found.")
 
     @staticmethod
-    def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
+    def show_barrier_messages(recommendations: Dict, df_target: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
 
         barrier_recs = recommendations.get("Barrier Messages", {})
@@ -417,10 +427,10 @@ class Dashboard:
         st.subheader("Message Templates (editable)")
 
         for idx, (key, details) in enumerate(barrier_recs.items()):
-            barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
+            barrier_name = details.get('insight', '').replace('people with primary barrier: ', '')
             
-            # Filter people in this barrier (make sure you have a 'barrier_profile' col in df)
-            df_barrier = df[df['barrier_profile'] == barrier_name].copy()
+            # Filter people in this barrier
+            df_barrier = df_target[df_target['barrier_profile'] == barrier_name].copy()
 
             with st.expander(f"Barrier {idx + 1}: {barrier_name}"):
                 st.markdown(f"**People affected:** {len(df_barrier)}")
@@ -477,19 +487,19 @@ class Dashboard:
                         sent, failed = 0, 0
                         for m in messages_to_send:
                             try:
-                                response = sms.send(m['text'], [m['to']], sender_id=sender_id)
-                                if "SMSMessageData" in response and response["SMSMessageData"]["Recipients"]:
-                                    sent += 1
-                                else:
-                                    failed += 1
-                                    st.error(f"Error sending to {m['to']}: No recipient data in response.")
+                                # Using Twilio instead of Africa's Talking
+                                message = client.messages.create(
+                                    body=m['text'],
+                                    from_=from_number,
+                                    to=m['to']
+                                )
+                                sent += 1
                             except Exception as e:
                                 failed += 1
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
 
                         st.success(f"✅ Sent: {sent}; ❌ Failed: {failed}")
 
-                
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
         st.header("Complete Analysis Report")
@@ -560,7 +570,7 @@ def main():
 
     # Expect upstream page to put processed df in session_state
     if "results_df" not in st.session_state:
-        st.warning("Please process data on the Home page first .")
+        st.warning("Please process data on the Home page first.")
         st.stop()
 
     df = st.session_state["results_df"]
@@ -569,6 +579,7 @@ def main():
     with st.spinner("Analyzing vaccination data and building recommendations..."):
         analysis = VaccineAnalyzer.analyze_data(df)
         recommendations = RecommendationEngine.generate_recommendations(analysis)
+        df_target = analysis['barrier_df']  # Get the filtered dataframe
 
     # Tabs
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
@@ -586,7 +597,7 @@ def main():
         Dashboard.show_factors(recommendations)
 
     with tab3:
-        Dashboard.show_barrier_messages(recommendations, df, df_target)
+        Dashboard.show_barrier_messages(recommendations, df_target)
 
     with tab4:
         Dashboard.show_analysis_report(analysis, recommendations)
