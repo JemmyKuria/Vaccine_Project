@@ -411,85 +411,81 @@ class Dashboard:
     def show_barrier_messages(recommendations: Dict, df_target: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
 
-        barrier_recs = recommendations.get("Barrier Messages", {})
-        if not barrier_recs:
+        # Get barrier data from recommendations
+        barrier_data = recommendations.get("Barrier Messages", {}).get("barriers", {})
+        if not barrier_data:
             st.warning("No barrier messages available.")
             return
 
         # Show summary of all barriers and counts
         st.subheader("All Identified Barriers")
         barrier_summary = []
-        for key, details in barrier_recs.items():
-            barrier_name = details.get('insight', '').replace('people with primary barrier: ', '')
-            count = details.get('numeric_value', 0)
+        for barrier_name, details in barrier_data.items():
             barrier_summary.append({
                 "Barrier": barrier_name,
-                "People Affected": count,
-                "Priority": details.get('priority', 'Medium')
+                "People Affected": details.get("people_affected", 0),
+                "Priority": details.get("priority", "Medium")
             })
         
         barrier_df = pd.DataFrame(barrier_summary)
-        st.dataframe(barrier_df.sort_values("People Affected", ascending=False))
+        st.dataframe(
+            barrier_df.sort_values("People Affected", ascending=False),
+            use_container_width=True
+        )
 
         # Vaccine type selector
-        vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal"], horizontal=True, index=0)
+        vaccine_type = st.radio(
+            "Select Vaccine Type:", 
+            ["H1N1", "Seasonal"], 
+            horizontal=True, 
+            index=0
+        )
 
         st.subheader("Message Templates (editable)")
 
-        for idx, (key, details) in enumerate(barrier_recs.items()):
-            barrier_name = details.get('insight', '').replace('people with primary barrier: ', '')
+        for idx, (barrier_name, details) in enumerate(barrier_data.items()):
+            # Filter people in this barrier - use primary_barrier column
+            df_barrier = df_target[df_target['primary_barrier'] == barrier_name].copy()
+            affected_count = len(df_barrier)
             
-            # Filter people in this barrier
-            df_barrier = df_target[df_target['barrier_profile'] == barrier_name].copy()
-
-            with st.expander(f"Barrier {idx + 1}: {barrier_name} ({len(df_barrier)} people)"):
-                # Extract messages
-                action_text = details.get('action', '')
-                h1_msg, s_msg = "", ""
-                if "H1N1:" in action_text and "Seasonal:" in action_text:
-                    try:
-                        h1_msg = action_text.split("H1N1: ")[1].split("\n\nSeasonal: ")[0].strip()
-                        s_msg = action_text.split("\n\nSeasonal: ")[1].strip()
-                    except:
-                        h1_msg = action_text
-                        s_msg = action_text
-                else:
-                    h1_msg = s_msg = action_text
-
-                # Editable text areas
-                if vaccine_type == "H1N1":
-                    h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
-                elif vaccine_type == "Seasonal":
-                    s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
+            with st.expander(f"Barrier {idx + 1}: {barrier_name} ({affected_count} people)"):
+                # Get the appropriate message
+                message_key = "h1n1" if vaccine_type == "H1N1" else "seasonal"
+                default_message = details["messages"][message_key]
+                
+                # Editable text area
+                edited_message = st.text_area(
+                    f"{vaccine_type} message for '{barrier_name}':",
+                    value=default_message,
+                    key=f"{message_key}_{idx}"
+                )
 
                 # Show sample contacts from this barrier
-                if len(df_barrier) > 0:
-                    if 'name' in df_barrier.columns and 'phone_number' in df_barrier.columns:
+                if affected_count > 0:
+                    if all(col in df_barrier.columns for col in ['name', 'phone_number']):
                         sample_contacts = df_barrier[['name', 'phone_number']].head(3).copy()
-                        sample_contacts['h1n1_msg'] = sample_contacts['name'].apply(
-                            lambda n: h1_msg.format(name=n) if "{name}" in h1_msg else h1_msg
-                        )
-                        sample_contacts['seasonal_msg'] = sample_contacts['name'].apply(
-                            lambda n: s_msg.format(name=n) if "{name}" in s_msg else s_msg
+                        sample_contacts['message'] = sample_contacts['name'].apply(
+                            lambda n: edited_message.format(name=n) if "{name}" in edited_message else edited_message
                         )
                         st.table(sample_contacts)
                     else:
                         st.warning("No contact data available (need 'name' and 'phone_number' columns)")
 
-                    # Prepare messages for this barrier only
+                    # Prepare messages for sending
                     messages_to_send = []
-                    for _, row in df_barrier.iterrows():
-                        msg_text = h1_msg.format(name=row['name']) if vaccine_type == "H1N1" else s_msg.format(name=row['name'])
-                        messages_to_send.append({
-                            'to': str(row['phone_number']),
-                            'name': row['name'],
-                            'text': msg_text
-                        })
+                    if all(col in df_barrier.columns for col in ['name', 'phone_number']):
+                        for _, row in df_barrier.iterrows():
+                            messages_to_send.append({
+                                'to': str(row['phone_number']),
+                                'name': row['name'],
+                                'text': edited_message.format(name=row['name'])
+                            })
 
                     st.markdown(f"**Messages prepared for this barrier:** {len(messages_to_send)}")
 
                     # Send button
-                    if st.button(f"📤 Send to {len(messages_to_send)} people in '{barrier_name}'", key=f"send_{idx}"):
+                    if st.button(f"📤 Send to {len(messages_to_send)} people in '{barrier_name}'", 
+                            key=f"send_{idx}"):
                         if not messages_to_send:
                             st.warning("No messages to send.")
                         else:
