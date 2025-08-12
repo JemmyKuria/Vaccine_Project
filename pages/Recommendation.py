@@ -385,14 +385,17 @@ class Dashboard:
         vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal"], horizontal=True, index=0)
 
         st.subheader("Message Templates (editable)")
-        messages_to_send = []
 
         for idx, (key, details) in enumerate(barrier_recs.items()):
-            with st.expander(f"Barrier {idx + 1}: {details.get('insight', '')}"):
-                barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
-                st.markdown(f"**People affected (approx)**: {details.get('numeric_value', 0)}")
+            barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
+            
+            # Filter people in this barrier (make sure you have a 'barrier_profile' col in df)
+            df_barrier = df[df['barrier_profile'] == barrier_name].copy()
 
-                # Extract original messages
+            with st.expander(f"Barrier {idx + 1}: {barrier_name}"):
+                st.markdown(f"**People affected:** {len(df_barrier)}")
+
+                # Extract messages
                 action_text = details.get('action', '')
                 h1_msg, s_msg = "", ""
                 if "H1N1:" in action_text and "Seasonal:" in action_text:
@@ -405,108 +408,58 @@ class Dashboard:
                 else:
                     h1_msg = s_msg = action_text
 
-                # Editable message fields
+                # Editable text areas
                 if vaccine_type == "H1N1":
                     h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
                 elif vaccine_type == "Seasonal":
                     s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
 
-                # Show sample contacts from your own data
-                if 'name' in df.columns and 'phone_number' in df.columns:
-                    sample_contacts = df[['name', 'phone_number']].head(3).copy()
-                    
-                    # Add personalized messages
+                # Show sample contacts from this barrier
+                if 'name' in df_barrier.columns and 'phone_number' in df_barrier.columns:
+                    sample_contacts = df_barrier[['name', 'phone_number']].head(3).copy()
                     sample_contacts['h1n1_msg'] = sample_contacts['name'].apply(
                         lambda n: h1_msg.format(name=n) if "{name}" in h1_msg else h1_msg
                     )
                     sample_contacts['seasonal_msg'] = sample_contacts['name'].apply(
                         lambda n: s_msg.format(name=n) if "{name}" in s_msg else s_msg
                     )
-                    
                     st.table(sample_contacts)
                 else:
                     st.warning("No contact data available (need 'name' and 'phone_number' columns)")
-        
-                # Prepare messages to send
-                if 'name' in df.columns and 'phone_number' in df.columns:
-                    num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
-                    contacts_to_send = df[['name', 'phone_number']].head(num_messages)
-                    contacts_to_send = df[['name', 'phone_number']].head(num_messages).copy()
-                    contacts_to_send['phone_number'] = contacts_to_send['phone_number'].astype(str)
 
-                    
-                    for _, row in contacts_to_send.iterrows():
-                        if vaccine_type == "H1N1":
-                            msg_text = h1_msg.format(name=row['name'])
-                        elif vaccine_type == "Seasonal":
-                            msg_text = s_msg.format(name=row['name'])
-                        
-                        messages_to_send.append({
-                            'to': row['phone_number'],
-                            'name': row['name'],
-                            'text': msg_text
-                        })
+                # Prepare messages for this barrier only
+                messages_to_send = []
+                for _, row in df_barrier.iterrows():
+                    msg_text = h1_msg.format(name=row['name']) if vaccine_type == "H1N1" else s_msg.format(name=row['name'])
+                    messages_to_send.append({
+                        'to': str(row['phone_number']),
+                        'name': row['name'],
+                        'text': msg_text
+                    })
 
-                # Show message count
-                st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
+                st.markdown(f"**Messages prepared for this barrier:** {len(messages_to_send)}")
 
-                # Send messages button
-                if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
+                # Send button
+                if st.button(f"📤 Send to {len(messages_to_send)} people in '{barrier_name}'", key=f"send_{idx}"):
                     if not messages_to_send:
-                        st.warning("No messages prepared to send.")
+                        st.warning("No messages to send.")
                     else:
                         sent, failed = 0, 0
                         for m in messages_to_send:
                             try:
-                                message = client.messages.create(
-                                    body=m['text'],
-                                    to=m['to'],
-                                    from_=from_number
-                                )
-                                if message.sid:
+                                response = sms.send(m['text'], [m['to']], sender_id=sender_id)
+                                if "SMSMessageData" in response and response["SMSMessageData"]["Recipients"]:
                                     sent += 1
                                 else:
                                     failed += 1
-                                    st.error(f"Error sending to {m['to']}: No SID returned.")
+                                    st.error(f"Error sending to {m['to']}: No recipient data in response.")
                             except Exception as e:
                                 failed += 1
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
 
-                        st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
-                        messages_to_send = []  # Clear sent messages
-                """# Send messages button
-                if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
-                    if not messages_to_send:
-                        st.warning("No messages prepared to send.")
-                    else:
-                        sent, failed = 0, 0
-                        for m in messages_to_send:
-                            try:
-                                response = sms.send(
-                                    message=m['text'],
-                                    recipients=[m['to']],
-                                    sender_id=sender_id
-                                )
-                                if 'SMSMessageData' in response and 'Recipients' in response['SMSMessageData']:
-                                    recipients = response['SMSMessageData']['Recipients']
-                                    if recipients and isinstance(recipients, list) and 'status' in recipients[0]:
-                                        if recipients[0]['status'] == "Success":
-                                            sent += 1
-                                        else:
-                                            failed += 1
-                                    else:
-                                        failed += 1
-                                        st.error(f"Error sending to {m['to']}: No recipient data in response.")
-                                else:
-                                    failed += 1
-                                    st.error(f"Error sending to {m['to']}: Invalid response structure.")
-                            except Exception as e:
-                                failed += 1
-                                st.error(f"Error sending to {m['to']}: {str(e)}")
+                        st.success(f"✅ Sent: {sent}; ❌ Failed: {failed}")
 
-                        st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
-                        messages_to_send = []  # Clear sent messages"""
-
+                
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
         st.header("Complete Analysis Report")
