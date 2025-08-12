@@ -657,11 +657,8 @@ class Dashboard:
     @staticmethod
     def _send_barrier_messages(idx: int, barrier_details: Dict, message_template: str, vaccine_type: str):
         """Send messages to all people affected by a specific barrier"""
-        contacts = barrier_details.get('sample_contact', {})  # This should be all_contacts
-        
-        # For demo purposes, we'll simulate sending to the contact list
-        # In real implementation, you'd iterate through barrier_details['all_contacts']
-        total_contacts = barrier_details.get('total_contacts', 0)
+        contacts = barrier_details.get('all_contacts', [])
+        total_contacts = len(contacts)
         
         if total_contacts == 0:
             st.error("No contacts available for this barrier group.")
@@ -669,21 +666,22 @@ class Dashboard:
             
         sent_count = 0
         failed_count = 0
+        failed_numbers = []
         
         with st.spinner(f"Sending {total_contacts} messages..."):
-            # Simulate sending (replace with actual contact iteration)
             try:
-                # This would normally iterate through all_contacts
-                 for contact in barrier_details['all_contacts']:
-                     message = client.messages.create(
-                         body=message_template.format(name=contact['name']),
-                         to=contact['phone_number'],
-                         from_=from_number
-                     )
-                
-                # For demo, we'll just show the results
-                sent_count = max(1, int(total_contacts * 0.95))  # 95% success rate simulation
-                failed_count = total_contacts - sent_count
+                for contact in contacts:
+                    try:
+                        message = client.messages.create(
+                            body=message_template.format(name=contact['name']),
+                            to=contact['phone_number'],
+                            from_=from_number
+                        )
+                        sent_count += 1
+                    except Exception as e:
+                        failed_count += 1
+                        failed_numbers.append(contact['phone_number'])
+                        continue
                 
                 st.success(f"✅ Campaign Deployed Successfully!")
                 st.metric("Messages Sent", f"{sent_count:,}")
@@ -691,8 +689,9 @@ class Dashboard:
                 
                 if failed_count > 0:
                     st.warning(f"⚠️ {failed_count} messages failed - typically due to invalid phone numbers")
+                    if st.checkbox("Show failed numbers"):
+                        st.write(failed_numbers)
                 
-                # Show campaign analytics
                 st.balloons()
                 
             except Exception as e:
@@ -703,25 +702,22 @@ class Dashboard:
         """Send test messages to a small sample"""
         sample_contact = barrier_details.get('sample_contact', {})
         
-        if not sample_contact.get('name') or not sample_contact.get('phone'):
+        if not sample_contact.get('name') or not sample_contact.get('phone_number'):
             st.error("No sample contact available for testing.")
             return
         
         try:
             test_message = message_template.format(name=sample_contact['name'])
             
-            # For demo purposes, simulate sending
             with st.spinner("Sending test message..."):
                 message = client.messages.create(
-                
                     body=test_message,
-                    to=sample_contact['phone'],
+                    to=sample_contact['phone_number'],
                     from_=from_number
-                 )
+                )
                 
-                # Simulate success
                 st.success("✅ Test message sent successfully!")
-                st.info(f"Sent to: {sample_contact['name']} ({sample_contact['phone']})")
+                st.info(f"Sent to: {sample_contact['name']} ({sample_contact['phone_number']})")
                 st.text_area("Message Content:", test_message, height=100)
                 
         except Exception as e:
