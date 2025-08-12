@@ -39,7 +39,7 @@ st.set_page_config(page_title="Home", page_icon="🏠")
 st.title("Public-Health Vaccine Predictor")
 
 # Add a logo or icon
-st.image("path_to_logo.png", width=100)
+#st.image("path_to_logo.png", width=100)
 
 # 1. File uploader
 with st.expander("Upload Data"):
