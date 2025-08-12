@@ -573,7 +573,7 @@ def main():
         Dashboard.show_factors(recommendations)
 
     with tab3:
-        Dashboard.show_barrier_messages(recommendations, df)
+        Dashboard.show_barrier_messages(recommendations, df, df_target)
 
     with tab4:
         Dashboard.show_analysis_report(analysis, recommendations)
