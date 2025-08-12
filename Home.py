@@ -40,6 +40,13 @@ st.markdown("""
         gap: 1rem;
         margin-top: 1rem;
     }
+    
+    .steps-container {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
     .step-card {
         background-color: #e0f7fa;
         border-left: 4px solid #008080;
@@ -47,11 +54,6 @@ st.markdown("""
         padding: 1.5rem;
         flex: 1;
         min-width: 0;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .step-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
     .step-number {
         background-color: #008080;
@@ -65,6 +67,12 @@ st.markdown("""
         margin-right: 12px;
         font-weight: bold;
     }
+    @media (max-width: 768px) {
+        .steps-container {
+            flex-direction: column;
+        }
+    }
+
     .metric-card {
         background-color: white;
         border-radius: 10px;
@@ -128,6 +136,7 @@ st.markdown("""
 <div class="card">
     <h2>How It Works</h2>
     <div class="steps-container">
+        <!-- Step 1 -->
         <div class="step-card">
             <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                 <span class="step-number">1</span>
@@ -136,6 +145,7 @@ st.markdown("""
             <p style="margin: 0;">Provide your CSV file containing survey responses</p>
         </div>
         
+        <!-- Step 2 -->
         <div class="step-card">
             <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                 <span class="step-number">2</span>
@@ -144,6 +154,7 @@ st.markdown("""
             <p style="margin: 0;">Our system processes vaccination likelihood</p>
         </div>
         
+        <!-- Step 3 -->
         <div class="step-card">
             <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                 <span class="step-number">3</span>
