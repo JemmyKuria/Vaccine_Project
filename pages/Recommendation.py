@@ -294,6 +294,13 @@ class RecommendationEngine:
         recommendations = {}
         barrier_profiles = analysis.get('barrier_profiles', [])
         for i, prof in enumerate(barrier_profiles[:500]):  # limit for display/export
+            key = f"Barrier Profile: {prof['barrier_profile']}
+
+        @staticmethod
+    def _generate_barrier_recommendations(analysis: Dict) -> Dict:
+        recommendations = {}
+        barrier_profiles = analysis.get('barrier_profiles', [])
+        for i, prof in enumerate(barrier_profiles[:500]):  # limit for display/export
             key = f"Barrier Profile: {prof['barrier_profile']}"
             recommendations[key] = {
                 "insight": f"{prof['people_affected']} people with primary barrier: {prof['primary_barrier']}",
@@ -356,7 +363,6 @@ class Dashboard:
             st.info("No medical leverage points found.")
 
     @staticmethod
-    @staticmethod
     def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
 
@@ -366,7 +372,7 @@ class Dashboard:
             return
 
         # Vaccine type selector
-        vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal", "Both"], horizontal=True, index=2)
+        vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal"], horizontal=True, index=0)
 
         st.subheader("Message Templates (editable)")
         messages_to_send = []
@@ -390,9 +396,9 @@ class Dashboard:
                     h1_msg = s_msg = action_text
 
                 # Editable message fields
-                if vaccine_type in ["H1N1", "Both"]:
+                if vaccine_type == "H1N1":
                     h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
-                if vaccine_type in ["Seasonal", "Both"]:
+                elif vaccine_type == "Seasonal":
                     s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
 
                 # Show sample contacts from your own data
@@ -427,8 +433,6 @@ class Dashboard:
                             msg_text = h1_msg.format(name=row['name'])
                         elif vaccine_type == "Seasonal":
                             msg_text = s_msg.format(name=row['name'])
-                        else:
-                            msg_text = f"{h1_msg.format(name=row['name'])}\n\n{s_msg.format(name=row['name'])}"
                         
                         messages_to_send.append({
                             'to': row['phone_number'],
