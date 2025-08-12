@@ -14,10 +14,10 @@ from_number = st.secrets["twilio"]["from_number"]
 # Initialize Twilio client
 client = Client(account_sid, auth_token)
 
-"""# Initialize Faker
+# Initialize Faker
 fake = Faker()
 
-# Initialize Africa's Talking
+"""# Initialize Africa's Talking
 username = st.secrets["africastalking"]["username"]
 api_key = st.secrets["africastalking"]["api_key"]
 sender_id = st.secrets["africastalking"]["sender_id"]
