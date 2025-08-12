@@ -177,3 +177,4 @@ with st.expander("Process Data and Predict", expanded=True):
             ax[1].set_title("Seasonal Vaccination Likelihood")
 
             st.pyplot(fig)
+
