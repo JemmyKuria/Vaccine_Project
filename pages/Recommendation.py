@@ -1,20 +1,8 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import numpy as np
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 from twilio.rest import Client
-import datetime
-import json
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix
-import seaborn as sns
-import matplotlib.pyplot as plt
-from io import BytesIO
-import base64
 
 # Access Twilio secrets
 account_sid = st.secrets["twilio"]["account_sid"]
@@ -26,196 +14,41 @@ client = Client(account_sid, auth_token)
 
 # ---------------- Page Configuration ----------------
 def configure_page():
-    st.set_page_config(
-        page_title="AI Recommendation Engine", 
-        layout="wide",
-        initial_sidebar_state="expanded",
-        menu_items={
-            'About': "AI-Powered Vaccine Recommendation System v2.0"
-        }
-    )
-    
-    # Custom CSS for better styling
-    st.markdown("""
-    <style>
-    .main-header {
-        background: linear-gradient(90deg, #1f77b4, #17becf);
-        color: white;
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-        text-align: center;
-    }
-    .metric-card {
-        background: #f8f9fa;
-        padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #1f77b4;
-        margin: 0.5rem 0;
-    }
-    .priority-high { border-left-color: #ff4b4b !important; }
-    .priority-medium { border-left-color: #ffa44b !important; }
-    .priority-low { border-left-color: #00cc88 !important; }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    st.markdown('<div class="main-header"><h1>🤖 AI-Powered Vaccine Recommendations</h1><p>Advanced Analytics & Personalized Messaging System</p></div>', unsafe_allow_html=True)
+    st.set_page_config(page_title="AI Recommendation Engine", layout="wide")
+    st.title("🤖 AI-Powered Vaccine Recommendations")
 
-# ---------------- Enhanced Analysis & Barrier Logic ----------------
+# ---------------- Analysis & Barrier Logic ----------------
 class VaccineAnalyzer:
     @staticmethod
     def analyze_data(df: pd.DataFrame) -> Dict[str, Dict]:
-        """Enhanced analyze dataset with advanced patterns and ML insights"""
+        """Analyze dataset and identify key patterns (including barrier profiles)"""
         analysis = {
             'high_risk_groups': {},
             'behavior_factors': {},
             'medical_factors': {},
-            'barrier_profiles': [],
-            'demographic_insights': {},
-            'geographic_patterns': {},
-            'ml_insights': {},
-            'temporal_patterns': {},
-            'data_quality': {}
+            'barrier_profiles': []
         }
-
-        # Data quality assessment
-        analysis['data_quality'] = VaccineAnalyzer._assess_data_quality(df)
 
         # Ensure string columns are strings
         categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
         for col in categorical_cols:
             df[col] = df[col].astype(str)
 
-        # Original analysis
+        # 1. Identify high-risk groups
         analysis['high_risk_groups'] = VaccineAnalyzer._find_high_risk_groups(df, categorical_cols)
 
-        # Enhanced behavior factors with advanced correlation analysis
+        # 2. Behavior factors
         behavior_cols = [c for c in df.columns if any(x in c.lower() for x in ['opinion', 'behavior'])]
         analysis['behavior_factors'] = VaccineAnalyzer._analyze_factors(df, behavior_cols, correlation_threshold=0.2)
 
-        # Medical factors
+        # 3. Medical factors
         medical_cols = [c for c in df.columns if any(x in c.lower() for x in ['doctor', 'health'])]
         analysis['medical_factors'] = VaccineAnalyzer._analyze_medical_factors(df, medical_cols)
 
-        # Enhanced barriers
+        # 4. Barriers and messaging
         analysis['barrier_profiles'] = VaccineAnalyzer._analyze_barriers(df)
 
-        # New enhanced analyses
-        analysis['demographic_insights'] = VaccineAnalyzer._analyze_demographics(df)
-        analysis['geographic_patterns'] = VaccineAnalyzer._analyze_geographic_patterns(df)
-        analysis['ml_insights'] = VaccineAnalyzer._generate_ml_insights(df)
-        analysis['temporal_patterns'] = VaccineAnalyzer._analyze_temporal_patterns(df)
-
         return analysis
-
-    @staticmethod
-    def _assess_data_quality(df: pd.DataFrame) -> Dict:
-        """Assess data quality metrics"""
-        return {
-            'total_records': len(df),
-            'missing_values': df.isnull().sum().to_dict(),
-            'completeness_rate': (1 - df.isnull().sum() / len(df)).mean(),
-            'duplicate_records': df.duplicated().sum(),
-            'data_types': df.dtypes.astype(str).to_dict(),
-            'memory_usage': f"{df.memory_usage(deep=True).sum() / 1024**2:.2f} MB"
-        }
-
-    @staticmethod
-    def _analyze_demographics(df: pd.DataFrame) -> Dict:
-        """Analyze demographic patterns in vaccination behavior"""
-        demographics = {}
-        
-        # Age group analysis
-        if 'age_group' in df.columns and any(col in df.columns for col in ['h1n1_label', 'seasonal_label']):
-            age_vaccination = df.groupby('age_group')[['h1n1_label', 'seasonal_label']].mean() if 'h1n1_label' in df.columns else {}
-            demographics['age_patterns'] = age_vaccination.to_dict() if hasattr(age_vaccination, 'to_dict') else {}
-
-        # Income analysis
-        income_cols = [col for col in df.columns if 'income' in col.lower()]
-        if income_cols and 'h1n1_label' in df.columns:
-            for col in income_cols:
-                demographics[f'{col}_impact'] = df.groupby(col)['h1n1_label'].mean().to_dict()
-
-        # Education analysis
-        education_cols = [col for col in df.columns if 'education' in col.lower()]
-        if education_cols and 'h1n1_label' in df.columns:
-            for col in education_cols:
-                demographics[f'{col}_impact'] = df.groupby(col)['h1n1_label'].mean().to_dict()
-
-        return demographics
-
-    @staticmethod
-    def _analyze_geographic_patterns(df: pd.DataFrame) -> Dict:
-        """Analyze geographic vaccination patterns"""
-        patterns = {}
-        
-        geo_cols = [col for col in df.columns if any(term in col.lower() for term in ['geo', 'region', 'state', 'msa'])]
-        
-        for col in geo_cols:
-            if df[col].nunique() < 50 and 'h1n1_label' in df.columns:  # Avoid too granular data
-                regional_rates = df.groupby(col)['h1n1_label'].agg(['mean', 'count']).reset_index()
-                patterns[col] = regional_rates.to_dict('records')
-
-        return patterns
-
-    @staticmethod
-    def _generate_ml_insights(df: pd.DataFrame) -> Dict:
-        """Generate machine learning insights"""
-        insights = {}
-        
-        if not {'h1n1_label', 'seasonal_label'}.issubset(df.columns):
-            return {'error': 'Required target variables not found'}
-
-        try:
-            # Prepare features
-            numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
-            feature_cols = [col for col in numeric_cols if col not in ['h1n1_label', 'seasonal_label']]
-            
-            if len(feature_cols) < 5:
-                return {'error': 'Insufficient numeric features for ML analysis'}
-
-            X = df[feature_cols].fillna(df[feature_cols].median())
-            y_h1n1 = df['h1n1_label']
-
-            # Train model
-            X_train, X_test, y_train, y_test = train_test_split(X, y_h1n1, test_size=0.2, random_state=42)
-            
-            rf = RandomForestClassifier(n_estimators=100, random_state=42)
-            rf.fit(X_train, y_train)
-            
-            # Feature importance
-            feature_importance = pd.DataFrame({
-                'feature': feature_cols,
-                'importance': rf.feature_importances_
-            }).sort_values('importance', ascending=False)
-
-            insights['feature_importance'] = feature_importance.head(10).to_dict('records')
-            insights['model_score'] = rf.score(X_test, y_test)
-            
-            # Predictions
-            predictions = rf.predict(X_test)
-            insights['classification_report'] = classification_report(y_test, predictions, output_dict=True)
-
-        except Exception as e:
-            insights['error'] = str(e)
-
-        return insights
-
-    @staticmethod
-    def _analyze_temporal_patterns(df: pd.DataFrame) -> Dict:
-        """Analyze temporal patterns if date columns exist"""
-        patterns = {}
-        
-        # Look for date-like columns
-        date_cols = [col for col in df.columns if any(term in col.lower() for term in ['date', 'time', 'month', 'year'])]
-        
-        if date_cols:
-            patterns['date_columns_found'] = date_cols
-            # Add temporal analysis here if needed
-        else:
-            patterns['message'] = 'No temporal columns identified'
-
-        return patterns
 
     @staticmethod
     def _find_high_risk_groups(df: pd.DataFrame, categorical_cols: List[str]) -> Dict:
@@ -253,8 +86,7 @@ class VaccineAnalyzer:
             if abs(corr) > correlation_threshold:
                 factors[col] = {
                     'correlation': float(corr),
-                    'direction': 'Negative' if corr < 0 else 'Positive',
-                    'strength': 'Strong' if abs(corr) > 0.5 else 'Moderate' if abs(corr) > 0.3 else 'Weak'
+                    'direction': 'Negative' if corr < 0 else 'Positive'
                 }
         return factors
 
@@ -280,23 +112,20 @@ class VaccineAnalyzer:
 
     @staticmethod
     def _analyze_barriers(df: pd.DataFrame) -> List[Dict]:
-        """Enhanced barrier analysis with more sophisticated profiling"""
         df = df.copy()
         if 'h1n1_vaccine_pred' in df.columns and 'seasonal_vaccine_pred' in df.columns:
             df_target = df[(df['h1n1_vaccine_pred'] == 0) | (df['seasonal_vaccine_pred'] == 0)].copy()
         else:
             df_target = df.copy()
 
-        # Enhanced barrier priority order
+        # Barrier priority order (higher priority first)
         barrier_conditions = [
             ('No Insurance', df_target.get('health_insurance', 1) == 0),
             ('Low Vaccine Belief', df_target.get('opinion_h1n1_vacc_effective', 3) <= 2),
             ('Low Risk Perception', df_target.get('opinion_h1n1_risk', 3) <= 2),
             ('Low Knowledge', df_target.get('h1n1_knowledge', 2) <= 1),
             ('Access Issues', df_target.get('behavioral_antiviral_meds', 0) == 0),
-            ('Low Safe Behaviors', df_target.get('safe_behavior_score', 10) <= 2),
-            ('Healthcare Distrust', df_target.get('doctor_recc_h1n1', 1) == 0),
-            ('Concern About Safety', df_target.get('opinion_h1n1_sick_from_vacc', 2) >= 3)
+            ('Low Safe Behaviors', df_target.get('safe_behavior_score', 10) <= 2)
         ]
 
         # Assign each person to exactly one barrier
@@ -304,51 +133,39 @@ class VaccineAnalyzer:
         for barrier, condition in barrier_conditions:
             df_target.loc[condition & (df_target['barrier_profile'] == 'No Major Barrier'), 'barrier_profile'] = barrier
 
-        # Enhanced message templates with A/B testing variants
+        # Message templates
         barrier_messages = {
             'No Insurance': {
                 'h1n1': "Hi {name}, the H1N1 vaccine is free for everyone. No insurance required — protect yourself today.",
-                'seasonal': "Hi {name}, the seasonal flu vaccine is free for everyone. No insurance needed — get your shot.",
-                'variant_h1n1': "Hi {name}, worried about costs? H1N1 vaccination is completely free - no insurance or payment needed.",
-                'variant_seasonal': "Hi {name}, flu shots are free regardless of insurance status. Protect yourself today."
+                'seasonal': "Hi {name}, the seasonal flu vaccine is free for everyone. No insurance needed — get your shot."
             },
             'Low Risk Perception': {
                 'h1n1': "Hi {name}, H1N1 can infect healthy people too. Vaccination helps protect you and your family.",
-                'seasonal': "Hi {name}, seasonal flu often affects healthy adults. The shot reduces severe illness risk.",
-                'variant_h1n1': "Hi {name}, even healthy adults can get seriously ill from H1N1. Vaccination is your best defense.",
-                'variant_seasonal': "Hi {name}, don't let flu catch you off guard. Even mild cases can keep you down for weeks."
+                'seasonal': "Hi {name}, seasonal flu often affects healthy adults. The shot reduces severe illness risk."
             },
             'Low Vaccine Belief': {
                 'h1n1': "Hi {name}, the H1N1 vaccine is safe and effective — recommended by health experts.",
-                'seasonal': "Hi {name}, the seasonal flu vaccine is safe and greatly lowers hospital visits.",
-                'variant_h1n1': "Hi {name}, millions have safely received the H1N1 vaccine. It's proven to prevent serious illness.",
-                'variant_seasonal': "Hi {name}, flu vaccines have protected families for decades. Trust the science."
+                'seasonal': "Hi {name}, the seasonal flu vaccine is safe and greatly lowers hospital visits."
             },
-            'Healthcare Distrust': {
-                'h1n1': "Hi {name}, talk to a healthcare provider you trust about H1N1 vaccination benefits.",
-                'seasonal': "Hi {name}, get answers to your flu vaccine questions from a trusted medical professional.",
-                'variant_h1n1': "Hi {name}, your health matters. Find a healthcare provider who listens to your H1N1 concerns.",
-                'variant_seasonal': "Hi {name}, seek out healthcare providers who respect your questions about flu vaccination."
+            'Low Knowledge': {
+                'h1n1': "Hi {name}, H1N1 spreads through droplets. Vaccination is the best preventive measure.",
+                'seasonal': "Hi {name}, flu can be serious. Ask your clinic about the seasonal vaccine."
             },
-            'Concern About Safety': {
-                'h1n1': "Hi {name}, H1N1 vaccine side effects are typically mild and brief. Serious reactions are extremely rare.",
-                'seasonal': "Hi {name}, flu vaccines are rigorously tested. Mild soreness is normal and shows your immunity is building.",
-                'variant_h1n1': "Hi {name}, worried about H1N1 vaccine safety? Talk to your doctor about the minimal risks vs. benefits.",
-                'variant_seasonal': "Hi {name}, millions safely get flu shots yearly. Severe side effects are far rarer than flu complications."
+            'Access Issues': {
+                'h1n1': "Hi {name}, the H1N1 shot takes under 10 minutes at nearby clinics — no appointment needed.",
+                'seasonal': "Hi {name}, getting the seasonal shot is quick — many clinics accept walk-ins."
+            },
+            'Low Safe Behaviors': {
+                'h1n1': "Hi {name}, adding the H1N1 vaccine gives stronger protection with your precautions.",
+                'seasonal': "Hi {name}, the seasonal shot adds an important layer of defence to your habits."
+            },
+            'No Major Barrier': {
+                'h1n1': "Hi {name}, getting vaccinated helps protect you and your community.",
+                'seasonal': "Hi {name}, the seasonal vaccine is a simple step to stay healthy."
             }
         }
 
-        # Add default messages for remaining barriers
-        for barrier in ['Low Knowledge', 'Access Issues', 'Low Safe Behaviors', 'No Major Barrier']:
-            if barrier not in barrier_messages:
-                barrier_messages[barrier] = {
-                    'h1n1': f"Hi {{name}}, the H1N1 vaccine is an important step in protecting your health.",
-                    'seasonal': f"Hi {{name}}, seasonal flu vaccination helps keep you and your community healthy.",
-                    'variant_h1n1': f"Hi {{name}}, consider getting your H1N1 vaccination to stay protected.",
-                    'variant_seasonal': f"Hi {{name}}, don't miss your seasonal flu shot this year."
-                }
-
-        # Build enhanced profiles output
+        # Build profiles output
         profiles_output = []
         profile_counts = df_target['barrier_profile'].value_counts().reset_index()
         profile_counts.columns = ['barrier_profile', 'people_affected']
@@ -374,177 +191,31 @@ class VaccineAnalyzer:
                 affected_df = df_target[df_target['barrier_profile'] == profile]
                 affected_contacts = affected_df[['name', 'phone_number']].to_dict('records')
 
-            # Enhanced priority scoring
-            priority_score = VaccineAnalyzer._calculate_priority_score(profile, count, len(df_target))
-            
             profiles_output.append({
                 'barrier_profile': profile,
                 'people_affected': count,
-                'percentage': round(count / len(df_target) * 100, 1),
                 'primary_barrier': profile,
                 'h1n1_message': barrier_messages[profile]['h1n1'],
                 'seasonal_message': barrier_messages[profile]['seasonal'],
-                'h1n1_variant': barrier_messages[profile].get('variant_h1n1', barrier_messages[profile]['h1n1']),
-                'seasonal_variant': barrier_messages[profile].get('variant_seasonal', barrier_messages[profile]['seasonal']),
                 'sample_contact': sample_contact,
                 'affected_contacts': affected_contacts,
-                'priority': priority_score['level'],
-                'priority_score': priority_score['score'],
-                'estimated_response_rate': VaccineAnalyzer._estimate_response_rate(profile)
+                'priority': 'High' if profile in ['No Insurance', 'Low Vaccine Belief'] else 'Medium'
             })
 
-        return sorted(profiles_output, key=lambda x: x['priority_score'], reverse=True)
+        return profiles_output
 
-    @staticmethod
-    def _calculate_priority_score(barrier: str, count: int, total: int) -> Dict:
-        """Calculate priority score for barriers"""
-        base_weights = {
-            'No Insurance': 0.9,
-            'Low Vaccine Belief': 0.85,
-            'Healthcare Distrust': 0.8,
-            'Concern About Safety': 0.75,
-            'Low Risk Perception': 0.7,
-            'Low Knowledge': 0.6,
-            'Access Issues': 0.55,
-            'Low Safe Behaviors': 0.5,
-            'No Major Barrier': 0.3
-        }
-        
-        base_score = base_weights.get(barrier, 0.5)
-        size_factor = min(count / total * 2, 0.3)  # Cap size influence
-        final_score = base_score + size_factor
-        
-        if final_score >= 0.8:
-            level = 'Critical'
-        elif final_score >= 0.6:
-            level = 'High'
-        elif final_score >= 0.4:
-            level = 'Medium'
-        else:
-            level = 'Low'
-            
-        return {'score': final_score, 'level': level}
-
-    @staticmethod
-    def _estimate_response_rate(barrier: str) -> float:
-        """Estimate expected response rate based on barrier type"""
-        rates = {
-            'No Insurance': 0.75,
-            'Access Issues': 0.70,
-            'Low Knowledge': 0.65,
-            'Low Risk Perception': 0.45,
-            'Low Vaccine Belief': 0.25,
-            'Healthcare Distrust': 0.20,
-            'Concern About Safety': 0.30,
-            'Low Safe Behaviors': 0.50,
-            'No Major Barrier': 0.60
-        }
-        return rates.get(barrier, 0.45)
-
-# ---------------- Enhanced Recommendation Engine ----------------
+# ---------------- Recommendation Engine ----------------
 class RecommendationEngine:
     @staticmethod
     def generate_recommendations(analysis: Dict) -> Dict[str, Dict]:
-        """Convert analysis into enhanced actionable recommendations"""
+        """Convert analysis into actionable recommendations"""
         return {
             "Target Groups": RecommendationEngine._generate_group_recommendations(analysis),
             "Behavioral Factors": RecommendationEngine._generate_behavior_recommendations(analysis),
             "Medical Factors": RecommendationEngine._generate_medical_recommendations(analysis),
-            "Barrier Messages": RecommendationEngine._generate_barrier_recommendations(analysis),
-            "ML Insights": RecommendationEngine._generate_ml_recommendations(analysis),
-            "Geographic Patterns": RecommendationEngine._generate_geographic_recommendations(analysis),
-            "Campaign Strategies": RecommendationEngine._generate_campaign_strategies(analysis)
+            "Barrier Messages": RecommendationEngine._generate_barrier_recommendations(analysis)
         }
 
-    @staticmethod
-    def _generate_ml_recommendations(analysis: Dict) -> Dict:
-        """Generate recommendations from ML insights"""
-        recommendations = {}
-        ml_insights = analysis.get('ml_insights', {})
-        
-        if 'feature_importance' in ml_insights:
-            for feature in ml_insights['feature_importance'][:5]:
-                feature_name = feature['feature'].replace('_', ' ').title()
-                recommendations[f"ML Feature: {feature_name}"] = {
-                    "insight": f"ML model identifies this as key predictor (importance: {feature['importance']:.3f})",
-                    "numeric_value": feature['importance'],
-                    "action": f"Focus interventions on {feature_name.lower()} factors",
-                    "priority": "High" if feature['importance'] > 0.1 else "Medium"
-                }
-        
-        if 'model_score' in ml_insights:
-            recommendations["Model Performance"] = {
-                "insight": f"Prediction accuracy: {ml_insights['model_score']:.1%}",
-                "numeric_value": ml_insights['model_score'],
-                "action": "Use model predictions to prioritize outreach",
-                "priority": "High" if ml_insights['model_score'] > 0.8 else "Medium"
-            }
-            
-        return recommendations
-
-    @staticmethod
-    def _generate_geographic_recommendations(analysis: Dict) -> Dict:
-        """Generate geographic targeting recommendations"""
-        recommendations = {}
-        geo_patterns = analysis.get('geographic_patterns', {})
-        
-        for pattern_name, pattern_data in geo_patterns.items():
-            if isinstance(pattern_data, list) and pattern_data:
-                # Find regions with lowest vaccination rates
-                sorted_regions = sorted(pattern_data, key=lambda x: x.get('mean', 1))
-                for region in sorted_regions[:3]:  # Top 3 lowest
-                    region_name = str(region.get(pattern_name, 'Unknown'))
-                    rate = region.get('mean', 0)
-                    count = region.get('count', 0)
-                    
-                    recommendations[f"Geographic Focus: {region_name}"] = {
-                        "insight": f"Low vaccination rate: {rate:.1%} ({count} people)",
-                        "numeric_value": 1 - rate,  # Convert to risk score
-                        "action": f"Targeted campaign in {region_name}",
-                        "priority": "High" if rate < 0.4 else "Medium"
-                    }
-        
-        return recommendations
-
-    @staticmethod
-    def _generate_campaign_strategies(analysis: Dict) -> Dict:
-        """Generate high-level campaign strategies"""
-        strategies = {}
-        barrier_profiles = analysis.get('barrier_profiles', [])
-        
-        if barrier_profiles:
-            # Overall strategy based on top barriers
-            top_barriers = sorted(barrier_profiles, key=lambda x: x['people_affected'], reverse=True)[:3]
-            
-            for i, barrier in enumerate(top_barriers):
-                strategy_name = f"Strategy {i+1}: Address {barrier['barrier_profile']}"
-                strategies[strategy_name] = {
-                    "insight": f"Affects {barrier['people_affected']} people ({barrier.get('percentage', 0)}%)",
-                    "numeric_value": barrier['people_affected'],
-                    "action": RecommendationEngine._get_strategy_action(barrier['barrier_profile']),
-                    "priority": barrier['priority'],
-                    "estimated_response": f"{barrier.get('estimated_response_rate', 0.5):.0%}"
-                }
-        
-        return strategies
-
-    @staticmethod
-    def _get_strategy_action(barrier: str) -> str:
-        """Get strategic action for each barrier type"""
-        strategies = {
-            'No Insurance': "Partner with free clinics, emphasize no-cost messaging",
-            'Low Vaccine Belief': "Deploy trusted community leaders, share success stories",
-            'Healthcare Distrust': "Build relationships with community health workers",
-            'Concern About Safety': "Provide detailed safety data, address specific concerns",
-            'Low Risk Perception': "Share real stories, emphasize community protection",
-            'Low Knowledge': "Educational campaigns, FAQ resources",
-            'Access Issues': "Mobile clinics, extended hours, workplace programs",
-            'Low Safe Behaviors': "Integrate with broader health promotion",
-            'No Major Barrier': "Simple reminders and convenience messaging"
-        }
-        return strategies.get(barrier, "Develop targeted intervention strategy")
-
-    # Keep existing methods
     @staticmethod
     def _generate_group_recommendations(analysis: Dict) -> Dict:
         recommendations = {}
@@ -574,10 +245,10 @@ class RecommendationEngine:
                 continue
 
             recommendations[factor.replace('_', ' ')] = {
-                "insight": f"{stats['direction']} correlation (r={abs(stats['correlation']):.2f}, {stats.get('strength', 'Moderate')})",
+                "insight": f"{stats['direction']} correlation (r={abs(stats['correlation']):.2f})",
                 "numeric_value": abs(stats['correlation']),
                 "action": f"Campaign focusing on {factor.replace('_', ' ')}",
-                "priority": "High" if stats.get('strength') == 'Strong' else "Medium"
+                "priority": "High"
             }
         return recommendations
 
@@ -604,53 +275,20 @@ class RecommendationEngine:
         for prof in barrier_profiles[:500]:  # limit for display
             key = f"Barrier Profile: {prof['barrier_profile']}"
             recommendations[key] = {
-                "insight": f"{prof['people_affected']} people ({prof.get('percentage', 0)}%) with barrier: {prof['primary_barrier']}",
+                "insight": f"{prof['people_affected']} people with barrier: {prof['primary_barrier']}",
                 "numeric_value": prof['people_affected'],
                 "action": f"H1N1: {prof['h1n1_message']}\n\nSeasonal: {prof['seasonal_message']}",
                 "priority": prof['priority'],
                 "sample_contact": prof.get('sample_contact'),
-                "affected_contacts": prof.get('affected_contacts', []),
-                "estimated_response_rate": prof.get('estimated_response_rate', 0.5),
-                "priority_score": prof.get('priority_score', 0.5)
+                "affected_contacts": prof.get('affected_contacts', [])
             }
         return recommendations
 
-# ---------------- Enhanced Dashboard Components ----------------
+# ---------------- Dashboard Components ----------------
 class Dashboard:
-    @staticmethod
-    def show_overview_metrics(analysis: Dict, recommendations: Dict):
-        """Display key overview metrics"""
-        st.header("📊 Campaign Overview")
-        
-        # Calculate key metrics
-        total_people = analysis.get('data_quality', {}).get('total_records', 0)
-        barrier_profiles = analysis.get('barrier_profiles', [])
-        total_at_risk = sum(p['people_affected'] for p in barrier_profiles)
-        
-        ml_score = analysis.get('ml_insights', {}).get('model_score', 0)
-        data_quality = analysis.get('data_quality', {}).get('completeness_rate', 0)
-        
-        col1, col2, col3, col4, col5 = st.columns(5)
-        
-        with col1:
-            st.metric("Total Population", f"{total_people}")
-        
-        with col2:
-            st.metric("Total At Risk", f"{total_at_risk}", delta=f"{(total_at_risk / total_people * 100):.2f}%")
-        
-        with col3:
-            st.metric("ML Model Accuracy", f"{ml_score:.2%}")
-        
-        with col4:
-            st.metric("Data Completeness", f"{data_quality:.2%}")
-        
-        with col5:
-            st.metric("Unique Barriers Identified", len(barrier_profiles))
-
     @staticmethod
     def show_priority_groups(recommendations: Dict):
         st.header("Priority Intervention Groups (Sorted by Risk)")
-
         target_groups = recommendations.get("Target Groups", {})
         sorted_groups = sorted(
             target_groups.items(),
@@ -662,7 +300,7 @@ class Dashboard:
         for i, (group, details) in enumerate(sorted_groups[:10]):
             with cols[i % 2]:
                 priority = details.get('priority', 'Medium')
-                color = "#ff4b4b" if priority == "High" else "#ffa44b" if priority == "Medium" else "#00cc88"
+                color = "#ff4b4b" if priority == "High" else "#ffa44b"
                 st.markdown(f"<h4 style='color:{color}'>🔴 {group} ({priority} Priority)</h4>", unsafe_allow_html=True)
                 st.metric("Hesitancy", f"{details.get('numeric_value', 0)}%")
                 st.markdown(f"**Why**: {details.get('insight', '')}")
@@ -672,12 +310,10 @@ class Dashboard:
     def show_factors(recommendations: Dict):
         st.header("Most Influential Factors")
 
-        # Behavioral Factors
         if recommendations.get("Behavioral Factors"):
             st.subheader("Behavioral Drivers")
             for factor, details in recommendations.get("Behavioral Factors", {}).items():
                 st.markdown(f"**{factor.title()}**")
-                # show simple progress - clamp to [0,1]
                 score = min(1.0, float(details.get('numeric_value', 0)))
                 st.progress(score)
                 st.caption(details.get('insight', ''))
@@ -685,7 +321,6 @@ class Dashboard:
         else:
             st.info("No behavioral drivers above threshold found.")
 
-        # Medical Factors
         if recommendations.get("Medical Factors"):
             st.subheader("Healthcare Leverage Points")
             for factor, details in recommendations.get("Medical Factors", {}).items():
@@ -700,7 +335,6 @@ class Dashboard:
     @staticmethod
     def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
         st.header("📨 Personalized Messaging Recommendations")
-
         barrier_recs = recommendations.get("Barrier Messages", {})
         if not barrier_recs:
             st.warning("No barrier messages available.")
@@ -711,55 +345,63 @@ class Dashboard:
 
         for idx, (key, details) in enumerate(barrier_recs.items()):
             with st.expander(f"Barrier {idx + 1}: {details.get('insight', '')}"):
-                barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
-                st.markdown(f"**People affected (approx)**: {details.get('numeric_value', 0)}")
-
-                # Extract messages
-                action_text = details.get('action', '')
-                h1_msg, s_msg = "", ""
-                if "H1N1:" in action_text and "Seasonal:" in action_text:
-                    try:
-                        h1_msg = action_text.split("H1N1: ")[1].split("\n\nSeasonal: ")[0].strip()
-                        s_msg = action_text.split("\n\nSeasonal: ")[1].strip()
-                    except:
-                        h1_msg = action_text
-                        s_msg = action_text
-                else:
-                    h1_msg = s_msg = action_text
-
+                barrier_name = details.get('primary_barrier', 'Unknown')
+                st.markdown(f"**People affected**: {details.get('numeric_value', 0)}")
+                
+                # Get current messages
+                h1_msg = details['action'].split("H1N1: ")[1].split("\n\nSeasonal: ")[0]
+                s_msg = details['action'].split("\n\nSeasonal: ")[1]
+                
                 # Editable fields
                 if vaccine_type == "H1N1":
                     h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
-                elif vaccine_type == "Seasonal":
+                else:
                     s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
 
-                # Sample contacts preview
-                if 'name' in df.columns and 'phone_number' in df.columns:
-                    sample_contacts = df[['name', 'phone_number']].head(3).copy()
-                    sample_contacts['h1n1_msg'] = sample_contacts['name'].apply(
-                        lambda n: h1_msg.format(name=n) if "{name}" in h1_msg else h1_msg
-                    )
-                    sample_contacts['seasonal_msg'] = sample_contacts['name'].apply(
-                        lambda n: s_msg.format(name=n) if "{name}" in s_msg else s_msg
-                    )
-                    st.table(sample_contacts)
+                # Show sample contact
+                sample_contact = details.get('sample_contact')
+                if sample_contact:
+                    st.markdown("**Sample Contact:**")
+                    st.write(f"Name: {sample_contact['name']}")
+                    st.write(f"Phone: {sample_contact['phone']}")
+                    
+                    # Preview message
+                    msg = h1_msg if vaccine_type == "H1N1" else s_msg
+                    preview = msg.format(name=sample_contact['name'])
+                    st.markdown("**Message Preview:**")
+                    st.info(preview)
                 else:
-                    st.warning("No contact data available (need 'name' and 'phone_number' columns)")
+                    st.warning("No sample contact available")
 
-                # Show count for this barrier only
-                st.markdown(f"**Messages prepared for this barrier:** {len(details.get('messages_to_send', []))}")
+                # Prepare ALL messages for this barrier
+                affected_contacts = details.get('affected_contacts', [])
+                messages_to_send = []
+                for contact in affected_contacts:
+                    msg_text = (h1_msg if vaccine_type == "H1N1" else s_msg).format(name=contact['name'])
+                    messages_to_send.append({
+                        'to': contact['phone_number'],
+                        'name': contact['name'],
+                        'text': msg_text
+                    })
 
-                # Send button for this barrier
-                if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
-                    msgs = details.get('messages_to_send', [])
+                # Store messages in session state
+                st.session_state[f"messages_barrier_{idx}"] = messages_to_send
+                st.markdown(f"**Total messages prepared:** {len(messages_to_send)}")
+
+                # Send button for ALL messages in this barrier
+                if st.button(f"📤 Send ALL Messages for {barrier_name}", key=f"send_{idx}"):
+                    msgs = st.session_state.get(f"messages_barrier_{idx}", [])
                     if not msgs:
                         st.warning("No messages prepared to send.")
                     else:
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
                         sent, failed = 0, 0
-                        for m in msgs:
+                        
+                        for i, m in enumerate(msgs):
                             try:
                                 message = client.messages.create(
-                                    body=m['h1n1_text'] if vaccine_type == "H1N1" else m['seasonal_text'],
+                                    body=m['text'],
                                     to=m['to'],
                                     from_=from_number
                                 )
@@ -767,18 +409,21 @@ class Dashboard:
                                     sent += 1
                                 else:
                                     failed += 1
-                                    st.error(f"Error sending to {m['to']}: No SID returned.")
+                                progress = (i + 1) / len(msgs)
+                                progress_bar.progress(progress)
+                                status_text.text(f"Sending {i+1}/{len(msgs)} - {sent} sent, {failed} failed")
                             except Exception as e:
                                 failed += 1
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
+                        
                         st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
-                        st.balloons()
+                        if sent > 0:
+                            st.balloons()
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
         st.header("Complete Analysis Report")
 
-        # Feature Importance Visualization (simple)
         features = []
         importance = []
 
@@ -842,22 +487,18 @@ class Dashboard:
 def main():
     configure_page()
 
-    # Expect upstream page to put processed df in session_state
     if "results_df" not in st.session_state:
         st.warning("Please process data on the Home page first and place the results in st.session_state['results_df'].")
         st.stop()
 
     df = st.session_state["results_df"]
 
-    # Run analysis
     with st.spinner("Analyzing vaccination data and building recommendations..."):
         analysis = VaccineAnalyzer.analyze_data(df)
         recommendations = RecommendationEngine.generate_recommendations(analysis)
 
-    # Tabs
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📊 Overview",
-        "📈 Priority Groups",
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "📊 Priority Groups",
         "🧠 Top Factors",
         "📨 Messaging",
         "📈 Analysis",
@@ -865,21 +506,18 @@ def main():
     ])
 
     with tab1:
-        Dashboard.show_overview_metrics(analysis, recommendations)
-
-    with tab2:
         Dashboard.show_priority_groups(recommendations)
 
-    with tab3:
+    with tab2:
         Dashboard.show_factors(recommendations)
 
-    with tab4:
+    with tab3:
         Dashboard.show_barrier_messages(recommendations, df)
 
-    with tab5:
+    with tab4:
         Dashboard.show_analysis_report(analysis, recommendations)
 
-    with tab6:
+    with tab5:
         Dashboard.setup_export(analysis, recommendations)
 
 if __name__ == "__main__":
