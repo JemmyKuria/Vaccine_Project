@@ -279,7 +279,7 @@ class RecommendationEngine:
         return recommendations
 
     @staticmethod
-   def _generate_barrier_recommendations(analysis: Dict) -> Dict:
+    def _generate_barrier_recommendations(analysis: Dict) -> Dict:
         """Generate actionable recommendations from barrier analysis.
         
         Args:
