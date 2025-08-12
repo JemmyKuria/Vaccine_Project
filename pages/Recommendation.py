@@ -254,7 +254,6 @@ class VaccineAnalyzer:
                 'primary_barrier': profile_info['primary_barrier'],
                 'h1n1_message': h1n1_msg,
                 'seasonal_message': seasonal_msg,
-                'samples': samples,
                 'priority': 'High' if any(b in profile for b in ['No Insurance', 'Low Vaccine Belief']) else 'Medium'
             })
 
