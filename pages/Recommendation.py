@@ -114,7 +114,7 @@ class VaccineAnalyzer:
                 factors[col] = float(effect_size)
         return factors
 
-   @staticmethod
+    @staticmethod
     def _analyze_barriers(df: pd.DataFrame) -> List[Dict]:
         df = df.copy()
         # Focus on those predicted not to vaccinate
