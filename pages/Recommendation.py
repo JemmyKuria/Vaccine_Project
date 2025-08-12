@@ -58,7 +58,8 @@ class VaccineAnalyzer:
     def _find_high_risk_groups(df: pd.DataFrame, categorical_cols: List[str]) -> Dict:
         """Identify groups with low vaccination rates"""
         high_risk = {}
-        columns_to_drop = ["employment_industry", "employment_occupation", "hhs_geo_region", "census_msa"]
+        columns_to_drop = ["employment_industry", "employment_occupation", "hhs_geo_region", "census_msa","name", "phone_number", "respondent_id","h1n1_vaccine", 
+                        "seasonal_vaccine", "h1n1_vaccine_pred", "seasonal_vaccine_pred", "h1n1_label", "seasonal_label", ""]
         filtered_cols = [col for col in categorical_cols if col not in columns_to_drop]
 
         for col in filtered_cols:
