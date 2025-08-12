@@ -17,13 +17,6 @@ client = Client(account_sid, auth_token)
 # Initialize Faker
 fake = Faker()
 
-"""# Initialize Africa's Talking
-username = st.secrets["africastalking"]["username"]
-api_key = st.secrets["africastalking"]["api_key"]
-sender_id = st.secrets["africastalking"]["sender_id"]
-
-africastalking.initialize(username, api_key)
-sms = africastalking.SMS"""
 
 # ---------------- Page Configuration ----------------
 def configure_page():
@@ -299,12 +292,6 @@ class RecommendationEngine:
                 continue
         return recommendations
 
-    @staticmethod
-    def _generate_barrier_recommendations(analysis: Dict) -> Dict:
-        recommendations = {}
-        barrier_profiles = analysis.get('barrier_profiles', [])
-        for i, prof in enumerate(barrier_profiles[:500]):  # limit for display/export
-            key = f"Barrier Profile: {prof['barrier_profile']}"
 
     @staticmethod
     def _generate_barrier_recommendations(analysis: Dict) -> Dict:
