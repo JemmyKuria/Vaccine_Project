@@ -674,12 +674,12 @@ class Dashboard:
             # Simulate sending (replace with actual contact iteration)
             try:
                 # This would normally iterate through all_contacts
-                # for contact in barrier_details['all_contacts']:
-                #     message = client.messages.create(
-                #         body=message_template.format(name=contact['name']),
-                #         to=contact['phone_number'],
-                #         from_=from_number
-                #     )
+                 for contact in barrier_details['all_contacts']:
+                     message = client.messages.create(
+                         body=message_template.format(name=contact['name']),
+                         to=contact['phone_number'],
+                         from_=from_number
+                     )
                 
                 # For demo, we'll just show the results
                 sent_count = max(1, int(total_contacts * 0.95))  # 95% success rate simulation
@@ -712,11 +712,12 @@ class Dashboard:
             
             # For demo purposes, simulate sending
             with st.spinner("Sending test message..."):
-                # message = client.messages.create(
-                #     body=test_message,
-                #     to=sample_contact['phone'],
-                #     from_=from_number
-                # )
+                message = client.messages.create(
+                
+                    body=test_message,
+                    to=sample_contact['phone'],
+                    from_=from_number
+                 )
                 
                 # Simulate success
                 st.success("✅ Test message sent successfully!")
