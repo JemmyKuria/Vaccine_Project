@@ -140,7 +140,7 @@ class VaccineAnalyzer:
             'Low Risk Perception': 3,
             'Low Safe Behaviors': 2,
             'Access/Time Issues': 1,
-            'No Insurance': 0
+            'No Insurance': 0,
             
         }
 
@@ -279,7 +279,7 @@ class RecommendationEngine:
         return recommendations
 
     @staticmethod
-    def _generate_barrier_recommendations(analysis: Dict) -> Dict:
+   def _generate_barrier_recommendations(analysis: Dict) -> Dict:
         """Generate actionable recommendations from barrier analysis.
         
         Args:
@@ -409,169 +409,106 @@ class Dashboard:
 
     @staticmethod
     def show_barrier_messages(recommendations: Dict, df_target: pd.DataFrame):
-        """Display and manage personalized vaccination barrier messages.
-        
-        Args:
-            recommendations: Output from _generate_barrier_recommendations()
-            df_target: DataFrame with individual barrier profiles and contact info
-        """
         st.header("📨 Personalized Messaging Recommendations")
 
-        # Validate inputs
-        if not recommendations.get("barriers", {}):
-            st.warning("No barrier messages available in recommendations.")
-            return
-        if df_target.empty:
-            st.warning("No target population data available.")
+        barrier_recs = recommendations.get("Barrier Messages", {})
+        if not barrier_recs:
+            st.warning("No barrier messages available.")
             return
 
-        # --- Barrier Summary Section ---
-        st.subheader("📊 Barrier Impact Summary")
-        
-        # Create summary dataframe
-        summary_data = []
-        for barrier, data in recommendations["barriers"].items():
-            summary_data.append({
-                "Barrier": barrier,
-                "People Affected": data["people_affected"],
-                "Priority": data["priority"]
+        # Show summary of all barriers and counts
+        st.subheader("All Identified Barriers")
+        barrier_summary = []
+        for key, details in barrier_recs.items():
+            barrier_name = details.get('insight', '').replace('people with primary barrier: ', '')
+            count = details.get('numeric_value', 0)
+            barrier_summary.append({
+                "Barrier": barrier_name,
+                "People Affected": count,
+                "Priority": details.get('priority', 'Medium')
             })
         
-        barrier_df = pd.DataFrame(summary_data).sort_values(
-            by=["Priority", "People Affected"], 
-            ascending=[False, False]
-        )
-        
-        # Display with conditional formatting
-        st.dataframe(
-            barrier_df.style.format({"People Affected": "{:,}"}).background_gradient(
-                subset=["People Affected"], cmap="YlOrRd"
-            ),
-            use_container_width=True
-        )
+        barrier_df = pd.DataFrame(barrier_summary)
+        st.dataframe(barrier_df.sort_values("People Affected", ascending=False))
 
-        # --- Message Configuration Section ---
-        st.subheader("✉️ Message Configuration")
-        
-        vaccine_type = st.radio(
-            "Select vaccine type:",
-            ["H1N1", "Seasonal"],
-            horizontal=True,
-            help="Switch between H1N1 and seasonal flu message templates"
-        )
+        # Vaccine type selector
+        vaccine_type = st.radio("Select Vaccine Type:", ["H1N1", "Seasonal"], horizontal=True, index=0)
 
-        # --- Per-Barrier Message Management ---
-        for barrier_idx, (barrier_name, barrier_data) in enumerate(recommendations["barriers"].items()):
-            # Get relevant message for selected vaccine type
-            message_key = "h1n1" if vaccine_type == "H1N1" else "seasonal"
-            default_message = barrier_data["messages"][message_key]
+        st.subheader("Message Templates (editable)")
+
+        for idx, (key, details) in enumerate(barrier_recs.items()):
+            barrier_name = details.get('insight', '').replace('people with primary barrier: ', '')
             
-            # Filter affected individuals
-            affected_people = df_target[df_target["primary_barrier"] == barrier_name]
-            affected_count = len(affected_people)
+            # Filter people in this barrier
+            df_barrier = df_target[df_target['barrier_profile'] == barrier_name].copy()
 
-            with st.expander(
-                f"**{barrier_name}** ({affected_count:,} people • {barrier_data['priority']} priority)",
-                expanded=(barrier_idx == 0)  # Auto-expand first item
-            ):
-                # --- Message Editing ---
-                edited_message = st.text_area(
-                    f"{vaccine_type} message template:",
-                    value=default_message,
-                    key=f"msg_{barrier_idx}_{message_key}",
-                    height=150,
-                    help="Use {name} for personalization"
-                )
+            with st.expander(f"Barrier {idx + 1}: {barrier_name} ({len(df_barrier)} people)"):
+                # Extract messages
+                action_text = details.get('action', '')
+                h1_msg, s_msg = "", ""
+                if "H1N1:" in action_text and "Seasonal:" in action_text:
+                    try:
+                        h1_msg = action_text.split("H1N1: ")[1].split("\n\nSeasonal: ")[0].strip()
+                        s_msg = action_text.split("\n\nSeasonal: ")[1].strip()
+                    except:
+                        h1_msg = action_text
+                        s_msg = action_text
+                else:
+                    h1_msg = s_msg = action_text
 
-                # --- Contact Preview ---
-                if st.checkbox(f"Show contact preview ({min(3, affected_count)} samples)", 
-                            key=f"preview_{barrier_idx}"):
-                    if affected_count == 0:
-                        st.warning("No contacts with this barrier profile")
-                    else:
-                        preview_cols = ["name", "phone_number"] if all(c in df_target.columns 
-                                                                    for c in ["name", "phone_number"]) else []
-                        
-                        if preview_cols:
-                            preview_df = affected_people[preview_cols].head(3).copy()
-                            preview_df["Personalized Message"] = preview_df["name"].apply(
-                                lambda x: edited_message.format(name=x)
-                            )
-                            st.table(preview_df)
-                        else:
-                            st.warning("Missing required columns (name, phone_number) for preview")
+                # Editable text areas
+                if vaccine_type == "H1N1":
+                    h1_msg = st.text_area(f"H1N1 message for '{barrier_name}':", h1_msg, key=f"h1n1_{idx}")
+                elif vaccine_type == "Seasonal":
+                    s_msg = st.text_area(f"Seasonal message for '{barrier_name}':", s_msg, key=f"seasonal_{idx}")
 
-                # --- Message Sending ---
-                if st.button(
-                    f"💬 Prepare messages for {affected_count:,} people",
-                    key=f"prepare_{barrier_idx}",
-                    help="Generate all personalized messages for this group",
-                    disabled=(affected_count == 0)
-                ):
-                    if not all(col in df_target.columns for col in ["name", "phone_number"]):
-                        st.error("Cannot send - missing name/phone_number columns")
-                    else:
-                        messages = []
-                        for _, row in affected_people.iterrows():
-                            messages.append({
-                                "to": str(row["phone_number"]),
-                                "name": row["name"],
-                                "message": edited_message.format(name=row["name"])
-                            })
-                        
-                        # Store in session state for later use
-                        st.session_state.setdefault("prepared_messages", {})[barrier_name] = {
-                            "vaccine_type": vaccine_type,
-                            "messages": messages,
-                            "count": len(messages)
-                        }
-                        st.success(f"Prepared {len(messages):,} messages for sending")
-
-        # --- Bulk Sending Section ---
-        if "prepared_messages" in st.session_state and st.session_state.prepared_messages:
-            st.subheader("🚀 Send Prepared Messages")
-            
-            total_to_send = sum(len(v["messages"]) 
-                            for v in st.session_state.prepared_messages.values())
-            
-            if st.button(f"📤 Send All {total_to_send:,} Prepared Messages",
-                        type="primary",
-                        help="Send all messages prepared in previous steps"):
-                
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                results = {"success": 0, "failed": 0}
-                
-                for barrier_name, data in st.session_state.prepared_messages.items():
-                    for msg in data["messages"]:
-                        try:
-                            # Replace with your actual sending logic
-                            # Example for Twilio:
-                            client.messages.create(
-                                body=msg["message"],
-                                from_=from_number,
-                                to=msg["to"]
-                             )
-                            results["success"] += 1
-                        except Exception as e:
-                            st.error(f"Failed to send to {msg['to']}: {str(e)}")
-                            results["failed"] += 1
-                        
-                        # Update progress
-                        progress = (results["success"] + results["failed"]) / total_to_send
-                        progress_bar.progress(min(progress, 1.0))
-                        status_text.text(
-                            f"Sent {results['success']:,} of {total_to_send:,} "
-                            f"({results['failed']:,} failed)"
+                # Show sample contacts from this barrier
+                if len(df_barrier) > 0:
+                    if 'name' in df_barrier.columns and 'phone_number' in df_barrier.columns:
+                        sample_contacts = df_barrier[['name', 'phone_number']].head(3).copy()
+                        sample_contacts['h1n1_msg'] = sample_contacts['name'].apply(
+                            lambda n: h1_msg.format(name=n) if "{name}" in h1_msg else h1_msg
                         )
-                
-                st.balloons()
-                st.success(f"""
-                    **Campaign complete!**  
-                    ✅ Success: {results['success']:,}  
-                    ❌ Failed: {results['failed']:,}
-                """)
-                del st.session_state.prepared_messages  # Clear after sending
+                        sample_contacts['seasonal_msg'] = sample_contacts['name'].apply(
+                            lambda n: s_msg.format(name=n) if "{name}" in s_msg else s_msg
+                        )
+                        st.table(sample_contacts)
+                    else:
+                        st.warning("No contact data available (need 'name' and 'phone_number' columns)")
+
+                    # Prepare messages for this barrier only
+                    messages_to_send = []
+                    for _, row in df_barrier.iterrows():
+                        msg_text = h1_msg.format(name=row['name']) if vaccine_type == "H1N1" else s_msg.format(name=row['name'])
+                        messages_to_send.append({
+                            'to': str(row['phone_number']),
+                            'name': row['name'],
+                            'text': msg_text
+                        })
+
+                    st.markdown(f"**Messages prepared for this barrier:** {len(messages_to_send)}")
+
+                    # Send button
+                    if st.button(f"📤 Send to {len(messages_to_send)} people in '{barrier_name}'", key=f"send_{idx}"):
+                        if not messages_to_send:
+                            st.warning("No messages to send.")
+                        else:
+                            sent, failed = 0, 0
+                            for m in messages_to_send:
+                                try:
+                                    message = client.messages.create(
+                                        body=m['text'],
+                                        from_=from_number,
+                                        to=m['to']
+                                    )
+                                    sent += 1
+                                except Exception as e:
+                                    failed += 1
+                                    st.error(f"Error sending to {m['to']}: {str(e)}")
+
+                            st.success(f"✅ Sent: {sent}; ❌ Failed: {failed}")
+                else:
+                    st.warning(f"No individuals found with barrier: {barrier_name}")
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
