@@ -1,9 +1,20 @@
 # 01_🏠_Home.py
 import streamlit as st
 import pandas as pd
-from pipeline import preprocess, predict 
+from pipeline import preprocess, predict
 
+# -------------------------------------------------
+# PAGE CONFIGURATION (must be first Streamlit call)
+# -------------------------------------------------
+st.set_page_config(
+    page_title="VaxPredict: Vaccine Recommendation Engine",
+    page_icon="💉",
+    layout="wide"
+)
+
+# -------------------------------------
 # Custom CSS styling (shared across all pages)
+# -------------------------------------
 def inject_css():
     st.markdown("""
     <style>
@@ -108,11 +119,11 @@ def inject_css():
     </style>
     """, unsafe_allow_html=True)
 
+# -------------------------------------
+# Home Page Function
+# -------------------------------------
 def home_page():
     inject_css()
-    
-    # Page configuration
-    st.set_page_config(page_title="VaxPredict: Vaccine Recommendation Engine", page_icon="💉", layout="wide")
 
     # Header with logo
     st.markdown("""
@@ -156,7 +167,7 @@ def home_page():
         </div>
         """, unsafe_allow_html=True)
 
-    # Main content
+    # Main content card
     st.markdown("""
     <div class="card">
         <h3 style="color: #2c3e50; margin-top: 0;">Upload Your Survey Data</h3>
@@ -187,20 +198,20 @@ def home_page():
         with st.spinner("Analyzing data and generating predictions..."):
             # Clean and predict labels directly
             df_clean = preprocess(df_raw.copy())
-            h1n1_label, seasonal_label = predict(df_clean)  # Returns 0/1 labels
-            
+            h1n1_label, seasonal_label = predict(df_clean)  # Expecting tuple of arrays/lists
+
             # Create final results dataframe
             results = df_raw.copy()
             results["h1n1_label"] = h1n1_label
             results["seasonal_label"] = seasonal_label
-            
+
             # Store in session state
             st.session_state["results_df"] = results
-            
+
             # Display success message
             st.success("✅ Analysis complete! Visit the other pages to explore results.")
-            
-            # Display summary metrics
+
+            # Summary metrics
             total = len(results)
             h1_vax_pct = results["h1n1_label"].mean() * 100
             seas_vax_pct = results["seasonal_label"].mean() * 100
@@ -210,7 +221,7 @@ def home_page():
                 <h3 style="color: #2c3e50;">Summary Statistics</h3>
             </div>
             """, unsafe_allow_html=True)
-            
+
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.markdown(f"""
@@ -219,7 +230,6 @@ def home_page():
                     <div class="metric-value">{total:,}</div>
                 </div>
                 """, unsafe_allow_html=True)
-            
             with col2:
                 st.markdown(f"""
                 <div class="metric-card">
@@ -227,7 +237,6 @@ def home_page():
                     <div class="metric-value">{h1_vax_pct:.1f}%</div>
                 </div>
                 """, unsafe_allow_html=True)
-            
             with col3:
                 st.markdown(f"""
                 <div class="metric-card">
@@ -235,10 +244,13 @@ def home_page():
                     <div class="metric-value">{seas_vax_pct:.1f}%</div>
                 </div>
                 """, unsafe_allow_html=True)
-        
+
         return results
 
     return None
 
+# -------------------------------------
+# Run the home page
+# -------------------------------------
 if __name__ == "__main__":
     home_page()
