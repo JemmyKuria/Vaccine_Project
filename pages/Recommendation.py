@@ -237,7 +237,7 @@ class VaccineAnalyzer:
                     'seasonal_message': barrier_messages[profile]['seasonal'],
                     'sample_contact': sample_contact,
                     'affected_contacts': contacts,
-                    'priority': 'High' if profile in ['No Insurance', 'Low Vaccine Belief'] else 'Medium'
+                    'priority': 'High' if profile in ['Low knowledge', 'Low Vaccine Belief'] else 'Medium'
                 })
 
             return sorted(profiles, key=lambda x: (-x['people_affected'], x['priority']))
