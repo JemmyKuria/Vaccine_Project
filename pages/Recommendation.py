@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from typing import Dict, List, Optional
 from twilio.rest import Client
+import plotly.graph_objects as go
 
 # Access Twilio secrets
 account_sid = st.secrets["twilio"]["account_sid"]
@@ -380,21 +381,40 @@ class Dashboard:
         if behavioral := recommendations.get("Behavioral Factors"):
             st.subheader("Psychological Drivers")
             for factor, details in behavioral.items():
-                with st.expander(f"{factor} ({details['direction']} Impact)"):
+                # Safely get direction with default value
+                direction = details.get('direction', 'Positive' if details.get('numeric_value', 0) >= 0 else 'Negative')
+                
+                with st.expander(f"{factor} ({direction} Impact)"):
                     col1, col2 = st.columns([3,1])
-                    col1.metric("Correlation Strength", f"{details['numeric_value']:.2f}")
-                    col2.metric("Priority", details['priority'])
+                    col1.metric("Correlation Strength", f"{details.get('numeric_value', 0):.2f}")
+                    col2.metric("Priority", details.get('priority', 'Medium'))
                     
-                    fig = go.Figure()
-                    fig.add_trace(go.Indicator(
-                        mode="gauge+number",
-                        value=details['numeric_value'],
-                        domain={'x': [0, 1], 'y': [0, 1]},
-                        gauge={'axis': {'range': [0, 1]}}
-                    ))
-                    st.plotly_chart(fig, use_container_width=True)
+                    # Create gauge chart with proper error handling
+                    try:
+                        fig = go.Figure()
+                        fig.add_trace(go.Indicator(
+                            mode="gauge+number",
+                            value=abs(float(details.get('numeric_value', 0))),
+                            domain={'x': [0, 1], 'y': [0, 1]},
+                            gauge={
+                                'axis': {'range': [0, 1]},
+                                'bar': {'color': "darkblue"},
+                                'steps': [
+                                    {'range': [0, 0.3], 'color': "lightgray"},
+                                    {'range': [0.3, 0.6], 'color': "gray"},
+                                    {'range': [0.6, 1], 'color': "darkgray"}
+                                ]
+                            }
+                        ))
+                        fig.update_layout(
+                            title=f"Impact Strength: {factor}",
+                            margin=dict(l=20, r=20, t=50, b=20)
+                        )
+                        st.plotly_chart(fig, use_container_width=True)
+                    except Exception as e:
+                        st.error(f"Could not create visualization: {str(e)}")
                     
-                    st.info(f"💡 **Recommended Action**: {details['action']}")
+                    st.info(f"💡 **Recommended Action**: {details.get('action', 'No action specified')}")
 
         # Medical Factors
         if medical := recommendations.get("Medical Factors"):
@@ -403,14 +423,18 @@ class Dashboard:
                 with st.container():
                     st.markdown(f"#### {factor}")
                     cols = st.columns(3)
-                    cols[0].metric("Impact Size", f"+{details['numeric_value']}%")
-                    cols[1].metric("High Group", details['high_group'])
-                    cols[2].metric("Low Group", details['low_group'])
+                    cols[0].metric("Impact Size", f"+{details.get('numeric_value', 0)}%")
+                    cols[1].metric("High Group", details.get('high_group', 'N/A'))
+                    cols[2].metric("Low Group", details.get('low_group', 'N/A'))
                     
-                    st.progress(details['numeric_value']/100)
-                    st.info(f"🎯 **Action**: {details['action']}")
+                    # Safe progress bar with value clamping
+                    progress_value = min(1.0, max(0.0, float(details.get('numeric_value', 0))/100))
+                    st.progress(progress_value)
+                    st.info(f"🎯 **Action**: {details.get('action', 'No action specified')}")
                     st.markdown("---")
 
+        if not behavioral and not medical:
+            st.info("No significant behavioral or medical factors identified above threshold.")
     @staticmethod
     def show_barrier_messages(recommendations: Dict, df: pd.DataFrame):
         st.header("📲 Precision Messaging Campaign")
