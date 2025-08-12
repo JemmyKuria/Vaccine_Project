@@ -4,8 +4,17 @@ import plotly.express as px
 from typing import Dict, List, Optional
 from faker import Faker
 import africastalking
+from twilio.rest import Client
 
-# Initialize Faker
+# Access Twilio secrets
+account_sid = st.secrets["twilio"]["account_sid"]
+auth_token = st.secrets["twilio"]["auth_token"]
+from_number = st.secrets["twilio"]["from_number"]
+
+# Initialize Twilio client
+client = Client(account_sid, auth_token)
+
+"""# Initialize Faker
 fake = Faker()
 
 # Initialize Africa's Talking
@@ -14,7 +23,7 @@ api_key = st.secrets["africastalking"]["api_key"]
 sender_id = st.secrets["africastalking"]["sender_id"]
 
 africastalking.initialize(username, api_key)
-sms = africastalking.SMS
+sms = africastalking.SMS"""
 
 # ---------------- Page Configuration ----------------
 def configure_page():
@@ -461,24 +470,16 @@ class Dashboard:
                         sent, failed = 0, 0
                         for m in messages_to_send:
                             try:
-                                response = sms.send(
-                                    message=m['text'],
-                                    recipients=[m['to']],
-                                    sender_id=sender_id
+                                message = client.messages.create(
+                                    body=m['text'],
+                                    to=m['to'],
+                                    from_=from_number
                                 )
-                                if 'SMSMessageData' in response and 'Recipients' in response['SMSMessageData']:
-                                    recipients = response['SMSMessageData']['Recipients']
-                                    if recipients and isinstance(recipients, list) and 'status' in recipients[0]:
-                                        if recipients[0]['status'] == "Success":
-                                            sent += 1
-                                        else:
-                                            failed += 1
-                                    else:
-                                        failed += 1
-                                        st.error(f"Error sending to {m['to']}: No recipient data in response.")
+                                if message.sid:
+                                    sent += 1
                                 else:
                                     failed += 1
-                                    st.error(f"Error sending to {m['to']}: Invalid response structure.")
+                                    st.error(f"Error sending to {m['to']}: No SID returned.")
                             except Exception as e:
                                 failed += 1
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
