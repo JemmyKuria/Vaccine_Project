@@ -34,9 +34,9 @@ st.markdown("""
         margin-bottom: 1rem;
         box-shadow: 0 4px 8px rgba(0,0,0,0.08);
     }
-    .step-container {
+    .steps-container {
         display: flex;
-        flex-direction: column;
+        justify-content: space-between;
         gap: 1rem;
         margin-top: 1rem;
     }
@@ -45,6 +45,8 @@ st.markdown("""
         border-left: 4px solid #008080;
         border-radius: 8px;
         padding: 1.5rem;
+        flex: 1;
+        min-width: 0;
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .step-card:hover {
@@ -90,6 +92,12 @@ st.markdown("""
         background-color: #006666 !important;
         color: white !important;
     }
+    
+    @media (max-width: 768px) {
+        .steps-container {
+            flex-direction: column;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -119,29 +127,29 @@ st.markdown("""
 st.markdown("""
 <div class="card">
     <h2>How It Works</h2>
-    <div class="step-container">
+    <div class="steps-container">
         <div class="step-card">
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                 <span class="step-number">1</span>
-                <h3 style="margin: 0;">Upload Survey Data</h3>
+                <h3 style="margin: 0;">Upload</h3>
             </div>
-            <p style="margin-top: 0.5rem; margin-left: 40px;">Provide your CSV file containing survey responses from the target population.</p>
+            <p style="margin: 0;">Provide your CSV file containing survey responses</p>
         </div>
         
         <div class="step-card">
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                 <span class="step-number">2</span>
-                <h3 style="margin: 0;">Analyze Predictions</h3>
+                <h3 style="margin: 0;">Analyze</h3>
             </div>
-            <p style="margin-top: 0.5rem; margin-left: 40px;">Our system processes the data to predict vaccination likelihood.</p>
+            <p style="margin: 0;">Our system processes vaccination likelihood</p>
         </div>
         
         <div class="step-card">
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
                 <span class="step-number">3</span>
-                <h3 style="margin: 0;">Explore Recommendations</h3>
+                <h3 style="margin: 0;">Recommend</h3>
             </div>
-            <p style="margin-top: 0.5rem; margin-left: 40px;">Get targeted campaign strategies based on the analysis.</p>
+            <p style="margin: 0;">Get targeted campaign strategies</p>
         </div>
     </div>
 </div>
