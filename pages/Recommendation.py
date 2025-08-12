@@ -377,7 +377,7 @@ class Dashboard:
             barrier_name = details.get('insight', '').replace('Detected barrier: ', '')
             
             # Filter people in this barrier (make sure you have a 'barrier_profile' col in df)
-            df_barrier = df[df['barrier_profile'] == barrier_name].copy()
+            df_barrier = df_target[df_target['barrier_profile'] == barrier_name].copy()
 
             with st.expander(f"Barrier {idx + 1}: {barrier_name}"):
                 st.markdown(f"**People affected:** {len(df_barrier)}")
