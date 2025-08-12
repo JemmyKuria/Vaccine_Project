@@ -219,17 +219,28 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
         
+        # Define professional color palettes
+        # Option 1: Teal theme (matches your app's primary color)
+        teal_colors = ['#008080', '#B0E0E6']  # Teal and Light Blue
+        
+        # Option 2: Modern blue/gray theme
+        # modern_colors = ['#2E86AB', '#A23B72']  # Blue and Muted Pink
+        
+        # Option 3: Professional green/blue theme
+        # professional_colors = ['#16537e', '#86C5D8']  # Navy Blue and Sky Blue
+        
         # H1N1 pie chart
         ax[0].pie(
             [h1_vax_pct, 100 - h1_vax_pct], 
             labels=["Likely", "Unlikely"], 
             autopct='%1.1f%%',
             startangle=90,
-            colors=['#4CAF50', '#FFA500'],  # ✅ green & orange
-            explode=(0.1, 0),
-            textprops={'fontsize': 10}
+            colors=teal_colors,
+            explode=(0.05, 0),  # Slightly smaller explode for cleaner look
+            textprops={'fontsize': 11, 'fontweight': 'bold'},
+            wedgeprops={'linewidth': 2, 'edgecolor': 'white'}  # Clean white borders
         )
-        ax[0].set_title("H1N1 Vaccination", fontweight='bold')
+        ax[0].set_title("H1N1 Vaccination", fontweight='bold', fontsize=14, pad=20)
         
         # Seasonal pie chart
         ax[1].pie(
@@ -237,11 +248,16 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
             labels=["Likely", "Unlikely"], 
             autopct='%1.1f%%',
             startangle=90,
-            colors=['#4CAF50', '#FFA500'],  # ✅ same scheme
-            explode=(0.1, 0),
-            textprops={'fontsize': 10}
+            colors=teal_colors,
+            explode=(0.05, 0),  # Slightly smaller explode for cleaner look
+            textprops={'fontsize': 11, 'fontweight': 'bold'},
+            wedgeprops={'linewidth': 2, 'edgecolor': 'white'}  # Clean white borders
         )
-        ax[1].set_title("Seasonal Vaccination", fontweight='bold')
+        ax[1].set_title("Seasonal Vaccination", fontweight='bold', fontsize=14, pad=20)
+        
+        # Improve overall figure appearance
+        plt.tight_layout()
+        fig.patch.set_facecolor('white')
         
         st.pyplot(fig)
 
