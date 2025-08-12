@@ -294,7 +294,7 @@ class RecommendationEngine:
         recommendations = {}
         barrier_profiles = analysis.get('barrier_profiles', [])
         for i, prof in enumerate(barrier_profiles[:500]):  # limit for display/export
-            key = f"Barrier Profile: {prof['barrier_profile']}
+            key = f"Barrier Profile: {prof['barrier_profile']}"
 
         @staticmethod
     def _generate_barrier_recommendations(analysis: Dict) -> Dict:
