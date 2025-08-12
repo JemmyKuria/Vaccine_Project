@@ -6,24 +6,24 @@ from faker import Faker
 import africastalking
 from twilio.rest import Client
 
-# Access Twilio secrets
+"""# Access Twilio secrets
 account_sid = st.secrets["twilio"]["account_sid"]
 auth_token = st.secrets["twilio"]["auth_token"]
 from_number = st.secrets["twilio"]["from_number"]
 
 # Initialize Twilio client
-client = Client(account_sid, auth_token)
+client = Client(account_sid, auth_token)"""
 
 # Initialize Faker
 fake = Faker()
 
-"""# Initialize Africa's Talking
+# Initialize Africa's Talking
 username = st.secrets["africastalking"]["username"]
 api_key = st.secrets["africastalking"]["api_key"]
 sender_id = st.secrets["africastalking"]["sender_id"]
 
 africastalking.initialize(username, api_key)
-sms = africastalking.SMS"""
+sms = africastalking.SMS
 
 # ---------------- Page Configuration ----------------
 def configure_page():
@@ -462,7 +462,7 @@ class Dashboard:
                 # Show message count
                 st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
 
-                # Send messages button
+                """# Send messages button
                 if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
                         st.warning("No messages prepared to send.")
@@ -480,6 +480,38 @@ class Dashboard:
                                 else:
                                     failed += 1
                                     st.error(f"Error sending to {m['to']}: No SID returned.")
+                            except Exception as e:
+                                failed += 1
+                                st.error(f"Error sending to {m['to']}: {str(e)}")
+
+                        st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
+                        messages_to_send = []  # Clear sent messages"""
+                # Send messages button
+                if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
+                    if not messages_to_send:
+                        st.warning("No messages prepared to send.")
+                    else:
+                        sent, failed = 0, 0
+                        for m in messages_to_send:
+                            try:
+                                response = sms.send(
+                                    message=m['text'],
+                                    recipients=[m['to']],
+                                    sender_id=sender_id
+                                )
+                                if 'SMSMessageData' in response and 'Recipients' in response['SMSMessageData']:
+                                    recipients = response['SMSMessageData']['Recipients']
+                                    if recipients and isinstance(recipients, list) and 'status' in recipients[0]:
+                                        if recipients[0]['status'] == "Success":
+                                            sent += 1
+                                        else:
+                                            failed += 1
+                                    else:
+                                        failed += 1
+                                        st.error(f"Error sending to {m['to']}: No recipient data in response.")
+                                else:
+                                    failed += 1
+                                    st.error(f"Error sending to {m['to']}: Invalid response structure.")
                             except Exception as e:
                                 failed += 1
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
