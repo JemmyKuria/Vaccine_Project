@@ -292,13 +292,15 @@ class RecommendationEngine:
         for factor, stats in analysis.get('behavior_factors', {}).items():
             try:
                 factor_name = factor.replace('_', ' ').title()
+                direction = "Negative" if stats.get('correlation', 0) < 0 else "Positive"
                 recommendations[factor_name] = {
-                    "insight": f"{stats['direction']} impact (r={abs(stats['correlation']):.2f}",
+                    "insight": f"{direction} impact (r={abs(stats['correlation']):.2f}",
                     "numeric_value": abs(stats['correlation']),
                     "action": f"Behavioral intervention targeting {factor_name.lower()}",
                     "priority": "High" if abs(stats['correlation']) > 0.25 else "Medium",
                     "h1n1_corr": stats.get('h1n1_corr', 0),
-                    "seasonal_corr": stats.get('seasonal_corr', 0)
+                    "seasonal_corr": stats.get('seasonal_corr', 0),
+                    "direction": direction  
                 }
             except Exception:
                 continue
