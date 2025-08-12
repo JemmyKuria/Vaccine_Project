@@ -6,24 +6,24 @@ from faker import Faker
 import africastalking
 from twilio.rest import Client
 
-"""# Access Twilio secrets
+# Access Twilio secrets
 account_sid = st.secrets["twilio"]["account_sid"]
 auth_token = st.secrets["twilio"]["auth_token"]
 from_number = st.secrets["twilio"]["from_number"]
 
 # Initialize Twilio client
-client = Client(account_sid, auth_token)"""
+client = Client(account_sid, auth_token)
 
 # Initialize Faker
 fake = Faker()
 
-# Initialize Africa's Talking
+"""# Initialize Africa's Talking
 username = st.secrets["africastalking"]["username"]
 api_key = st.secrets["africastalking"]["api_key"]
 sender_id = st.secrets["africastalking"]["sender_id"]
 
 africastalking.initialize(username, api_key)
-sms = africastalking.SMS
+sms = africastalking.SMS"""
 
 # ---------------- Page Configuration ----------------
 def configure_page():
@@ -426,19 +426,7 @@ class Dashboard:
                     st.table(sample_contacts)
                 else:
                     st.warning("No contact data available (need 'name' and 'phone_number' columns)")
-                def format_to_e164(phone):
-                    phone = str(phone).strip().replace(" ", "").replace("-", "")
-                    if phone.startswith("+254"):
-                        return phone
-                    elif phone.startswith("0"):
-                        return "+254" + phone[1:]
-                    elif phone.startswith("7"):
-                        return "+254" + phone
-                    else:
-                        raise ValueError(f"Invalid phone number format: {phone}")
-                # Apply to your dataframe before sending
-                df['phone_number'] = df['phone_number'].apply(format_to_e164)
-
+        
                 # Prepare messages to send
                 if 'name' in df.columns and 'phone_number' in df.columns:
                     num_messages = min(10, int(max(1, details.get('numeric_value', 0) // 1000 + 1)))
@@ -462,7 +450,7 @@ class Dashboard:
                 # Show message count
                 st.markdown(f"**Total messages prepared to send:** {len(messages_to_send)}")
 
-                """# Send messages button
+                # Send messages button
                 if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
                         st.warning("No messages prepared to send.")
@@ -485,8 +473,8 @@ class Dashboard:
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
 
                         st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
-                        messages_to_send = []  # Clear sent messages"""
-                # Send messages button
+                        messages_to_send = []  # Clear sent messages
+                """# Send messages button
                 if st.button(f"📤 Send Messages for {barrier_name}", key=f"send_{idx}"):
                     if not messages_to_send:
                         st.warning("No messages prepared to send.")
@@ -517,7 +505,7 @@ class Dashboard:
                                 st.error(f"Error sending to {m['to']}: {str(e)}")
 
                         st.success(f"✅ Sent: {sent} messages; ❌ Failed: {failed}")
-                        messages_to_send = []  # Clear sent messages
+                        messages_to_send = []  # Clear sent messages"""
 
     @staticmethod
     def show_analysis_report(analysis: Dict, recommendations: Dict):
