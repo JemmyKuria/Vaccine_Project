@@ -517,7 +517,7 @@ def main():
 
     # Expect upstream page to put processed df in session_state
     if "results_df" not in st.session_state:
-        st.warning("Please process data on the Home page first and place the results in st.session_state['results_df'].")
+        st.warning("Please process data on the Home page first .")
         st.stop()
 
     df = st.session_state["results_df"]
