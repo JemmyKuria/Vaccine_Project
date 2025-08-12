@@ -855,7 +855,7 @@ def main():
         recommendations = RecommendationEngine.generate_recommendations(analysis)
 
     # Tabs
-    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📊 Overview",
         "📈 Priority Groups",
         "🧠 Top Factors",
