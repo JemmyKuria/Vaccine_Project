@@ -138,9 +138,9 @@ class VaccineAnalyzer:
             'Low Knowledge': 5,
             'Low Vaccine Belief': 4,
             'Low Risk Perception': 3,
-            'Low Safe Behaviors': 2
+            'Low Safe Behaviors': 2,
             'Access/Time Issues': 1,
-            'No Insurance': 0,
+            'No Insurance': 0
             
         }
 
