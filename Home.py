@@ -139,26 +139,26 @@ with st.container():
             
 
 
-      # Display summary metrics with charts
-    st.subheader("Vaccination Likelihood Distribution")
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+            # Display summary metrics with charts
+            st.subheader("Vaccination Likelihood Distribution")
+            fig, ax = plt.subplots(1, 2, figsize=(12, 6))
 
-    # H1N1 vaccination likelihood
-    ax[0].pie([h1_vax_pct, 100 - h1_vax_pct], 
-                labels=["Likely", "Unlikely"], 
-                autopct='%1.1f%%', 
-                startangle=90, 
-                colors=['#4CAF50', '#f44336'],
-                explode=(0.1, 0))
-    ax[0].set_title("H1N1 Vaccination Likelihood")
+            # H1N1 vaccination likelihood
+            ax[0].pie([h1_vax_pct, 100 - h1_vax_pct], 
+                        labels=["Likely", "Unlikely"], 
+                        autopct='%1.1f%%', 
+                        startangle=90, 
+                        colors=['#4CAF50', '#f44336'],
+                        explode=(0.1, 0))
+            ax[0].set_title("H1N1 Vaccination Likelihood")
 
-    # Seasonal vaccination likelihood
-    ax[1].pie([seas_vax_pct, 100 - seas_vax_pct], 
-                labels=["Likely", "Unlikely"], 
-                autopct='%1.1f%%', 
-                startangle=90, 
-                colors=['#4CAF50', '#f44336'],
-                explode=(0.1, 0))
-    ax[1].set_title("Seasonal Vaccination Likelihood")
+            # Seasonal vaccination likelihood
+            ax[1].pie([seas_vax_pct, 100 - seas_vax_pct], 
+                        labels=["Likely", "Unlikely"], 
+                        autopct='%1.1f%%', 
+                        startangle=90, 
+                        colors=['#4CAF50', '#f44336'],
+                        explode=(0.1, 0))
+            ax[1].set_title("Seasonal Vaccination Likelihood")
 
-    st.pyplot(fig)
+            st.pyplot(fig)
