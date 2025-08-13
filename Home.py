@@ -400,6 +400,6 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         """, unsafe_allow_html=True)
 
     # Button to navigate to Recommendations page
-    if st.button("🚀 Continue to Data Preview", use_container_width=True):
-        st.session_state["clean_df"] = df_clean
-        st.switch_page("pages/1Data_Preview.py")
+if st.button("🚀 Continue to Data Preview", use_container_width=True):
+    st.session_state["clean_df"] = df_clean
+    st.switch_page("pages/1Data_Preview.py")
