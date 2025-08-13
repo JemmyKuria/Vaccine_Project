@@ -126,7 +126,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
 # =========================
 # About Section with Columns
 # =========================
@@ -172,8 +171,6 @@ with st.container():
             </ul>
         </div>
         """, unsafe_allow_html=True)
-    
-    
 
 # =========================
 # How It Works Section
@@ -383,23 +380,7 @@ if st.button("Analyze Vaccination Likelihood", use_container_width=True):
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("""
-        <style>
-        .stButton>button {
-        background-color: #008080 !important;
-        color: white !important;
-        border-radius: 8px !important;
-        padding: 0.6rem 1.2rem !important;
-        font-weight: bold !important;
-        border: none !important;
-    }
-    .stButton>button:hover {
-        background-color: #006666 !important;
-        transform: scale(1.02);
-    }</style>
-        """, unsafe_allow_html=True)
-
-    # Button to navigate to Recommendations page
-if st.button("🚀 Continue to Data Preview", use_container_width=True):
-    st.session_state["clean_df"] = df_clean
-    st.switch_page("pages/1Data_Preview.py")
+        # Button to navigate to Data Preview page
+        if st.button("🚀 Continue to Data Preview", use_container_width=True):
+            st.session_state["clean_df"] = df_clean
+            st.switch_page("pages/1Data_Preview.py")
