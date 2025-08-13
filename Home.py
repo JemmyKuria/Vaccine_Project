@@ -126,28 +126,38 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+
 # =========================
-# About Section - Corrected Version
+# About Section with Columns
 # =========================
 with st.container():
+    st.markdown('<h2 class="section-title">About This Tool</h2>', unsafe_allow_html=True)
+    
     st.markdown("""
-    <div class="card">
-        <h2 class="section-title">About This Tool</h2>
-        <div class="about-content">
-            <p>This application helps public health officials and vaccine campaign managers optimize their outreach efforts through advanced data analysis and machine learning.</p>
-            
-            <div class="highlight-box">
-                <h4>Key Features:</h4>
-                <ul>
-                    <li><strong>Predict vaccination likelihood</strong> for different demographic groups</li>
-                    <li><strong>Identify key factors</strong> influencing vaccine acceptance</li>
-                    <li><strong>Generate targeted outreach</strong> recommendations</li>
-                    <li><strong>Visualize campaign performance</strong> metrics</li>
-                </ul>
-            </div>
-            
-            <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates.</p>
-            
+    <div class="about-content">
+        <p>This application helps public health officials and vaccine campaign managers optimize their outreach efforts through advanced data analysis and machine learning.</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Create two columns for the features and benefits
+    col1, col2 = st.columns(2, gap="large")
+    
+    with col1:
+        st.markdown("""
+        <div class="highlight-box" style="height: 100%;">
+            <h4>Key Features:</h4>
+            <ul>
+                <li><strong>Predict vaccination likelihood</strong> for different demographic groups</li>
+                <li><strong>Identify key factors</strong> influencing vaccine acceptance</li>
+                <li><strong>Generate targeted outreach</strong> recommendations</li>
+                <li><strong>Visualize campaign performance</strong> metrics</li>
+            </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="highlight-box" style="height: 100%;">
             <h4>How It Benefits You:</h4>
             <ul>
                 <li>Increase vaccination rates by 15-30% through targeted outreach</li>
@@ -156,6 +166,11 @@ with st.container():
                 <li>Adapt strategies based on real population data</li>
             </ul>
         </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div class="about-content">
+        <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates while reducing campaign costs.</p>
     </div>
     """, unsafe_allow_html=True)
 
