@@ -1,4 +1,4 @@
-# PROJECT TITLE: PREDICTING H1N1 AND SEASONAL VACCINE UPTAKE
+# PREDICTING H1N1 AND SEASONAL VACCINE UPTAKE
 
 # PROJECT OVERVIEW
 
@@ -138,14 +138,14 @@ Metrics: Focus on recall for class 0 (unvaccinated) and F1-score, with custom sc
 The Gradient Boosting model was deployed as an interactive web application using Streamlit, **[VaxTrend Web App](https://vaxtrend.streamlit.app/)**. The application enables public health officials and campaign managers to upload survey data, predict vaccination likelihood for H1N1 and seasonal flu vaccines, and receive tailored recommendations for targeted outreach. The deployment leverages a pre-trained Random Forest model (multi_tuned_rf.pkl) and a robust pipeline for data preprocessing and prediction.
 Deployment Components
 
-Streamlit App (Home.py):
+### Streamlit App (Home.py):
 
 Interface: Provides a user-friendly interface with sections for uploading CSV files, viewing data previews, generating predictions, visualizing results (e.g., pie charts for vaccination likelihood), and accessing recommendations.
 Functionality:
 
-Users upload a CSV file containing survey data (e.g., demographic and behavioral features like h1n1_concern, age_group).
+Users upload a CSV file containing survey data (e.g. demographic and behavioural features like h1n1_concern, age_group).
 The app preprocesses the data using the preprocess function from pipeline.py, predicts vaccination status using the predict function, and stores results in st.session_state.
-Visualizations display predicted acceptance rates (e.g., H1N1: 21.3% likely, Seasonal: 46.6% likely) using pie charts.
+Visualisations display predicted acceptance rates (e.g. H1N1: 21.3% likely, Seasonal: 46.6% likely) using pie charts.
 Recommendations are generated via recommendation_generator.py and displayed on a separate page (1Data_Preview.py).
 
 
@@ -153,7 +153,7 @@ Styling: Custom CSS ensures a professional look with teal-themed buttons, cards,
 Navigation: Users can proceed to a “Data Preview” page for detailed insights and recommendations after analysis.
 
 
-Prediction Pipeline (pipeline.py):
+### Prediction Pipeline (pipeline.py):
 
 Model Loading: Automatically downloads the pre-trained model (multi_tuned_rf.pkl) from Google Drive if not present, using gdown. Supports both joblib and pickle for robust model loading.
 Preprocessing: The preprocess function handles missing values, encodes categorical features (e.g., education, race), engineers features (e.g., safe_behavior_score), and ensures column alignment with EXPECTED_COLS.
@@ -161,9 +161,9 @@ Prediction: The predict function uses the loaded model to generate binary labels
 Integration: Seamlessly called by the Streamlit app to process uploaded data and return predictions.
 
 
-Recommendation Generation (recommendation_generator.py):
+### Recommendation Generation (recommendation_generator.py):
 
-Analyzes predicted non-takers (unvaccinated individuals) to identify barriers (e.g., low knowledge, no insurance) and maps them to actionable strategies (e.g., SMS reminders, community partnerships).
+Analyses predicted non-takers (unvaccinated individuals) to identify barriers (e.g., low knowledge, no insurance) and maps them to actionable strategies (e.g., SMS reminders, community partnerships).
 Outputs a summary DataFrame with barrier profiles, affected counts, and recommendations, exported as CSV files (h1n1_recommendations.csv, seasonal_recommendations.csv).
 Integrated into the Streamlit app’s recommendation page for stakeholder use.
 
@@ -172,6 +172,6 @@ The project demonstrated the feasibility of predicting vaccine uptake using surv
 The deployed model and app provide a practical tool for public health professionals to target campaigns and resources effectively.
 
 ## Next Steps
-- Expand dataset to include other regions for improved generalisability.
+- Expand the dataset to include other regions for improved generalisability.
 - Conduct bias and fairness analysis.
 - Gather user feedback to refine the application.
