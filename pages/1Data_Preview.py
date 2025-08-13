@@ -345,7 +345,7 @@ with tab2:
                     text=label,
                     showarrow=False,
                     yshift=-40,
-                    font=dict(color=transformation_details[selected_feature].get('color', '#4C78A8'))
+                    font=dict(color=transformation_details[selected_feature].get('color', '#4C78A8')))
         
         fig.update_layout(
             plot_bgcolor='rgba(0,0,0,0)',
