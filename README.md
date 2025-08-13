@@ -21,13 +21,13 @@ This project aims to uncover patterns in vaccination behavior using a real-world
 
 # PROBLEM STATEMENT
 
-Despite wide-scale flu awareness campaigns and vaccine availability, many individuals do not take the vaccine. This makes entire populations vulnerable to flu outbreaks and strains healthcare systems. During pandemics, such as H1N1, knowing which groups are hesitant or likely to opt out of vaccination can make or break a country’s response. This project aims to predict whether a person is likely to receive the H1N1 vaccine and/or the seasonal flu vaccine based on their survey responses, including their demographic details, health status, beliefs, and behavior. By identifying high-risk or hesitant groups, we can help direct resources like public health messaging, vaccine access, and education to the right places at the right time.
+Despite wide-scale flu awareness campaigns and vaccine availability, many individuals do not take the vaccine. This makes entire populations vulnerable to flu outbreaks and strains healthcare systems. During pandemics, such as H1N1, knowing which groups are hesitant or likely to opt out of vaccination can make or break a country’s response. This project aims to predict whether a person is likely to receive the H1N1 vaccine and/or the seasonal flu vaccine based on their survey responses, including their demographic details, health status, beliefs, and behaviour. By identifying high-risk or hesitant groups, we can help direct resources like public health messaging, vaccine access, and education to the right places at the right time.
 
 # OBJECTIVES
 
 1. To identify the most significant features influencing the uptake of H1N1 and seasonal flu vaccines.
 
-2. To compare the performance of multiple classification algorithms in predicting vaccine uptake and fine-tune the best performing models for deployment.
+2. To compare the performance of multiple classification algorithms in predicting vaccine uptake and fine-tune the best-performing models for deployment.
 
 3. To develop a web-based application that allows users to input individual characteristics and receive probability predictions for vaccination uptake.
 
@@ -97,7 +97,7 @@ Saved preprocessed dataset as cleaned_vaccine_data.csv for consistent use.
 
 # MODELLING
 
-The projecy implements multi-label classification using MultiOutputClassifier for two labels (h1n1_vaccine, seasonal_vaccine).
+The project implements multi-label classification using MultiOutputClassifier for two labels (h1n1_vaccine, seasonal_vaccine).
 
 **Key evaluation Metrics:** Focused on recall for class 0 (unvaccinated) and F1-score,  using classification_report via the Evaluator class.
 
@@ -124,14 +124,6 @@ _Error Note: Later cells incorrectly split y_train into y_train_h1n1 and y_train
 - **Random Forest (H1N1):** Best parameters {max_depth: None, max_features: 'sqrt', min_samples_leaf: 1, min_samples_split: 5, n_estimators: 200}, F1-macro 0.73, recall 0.96 (unvaccinated).
 
 - **Gradient Boosting (Seasonal):** Best parameters {learning_rate: 0.1, max_depth: 3, min_samples_split: 2, n_estimators: 200, subsample: 1.0}, F1-macro 0.78.
-
-## Model Performance
-
-Baseline Models: Evaluated Logistic Regression, Decision Tree, Random Forest, Gradient Boosting.
-
-Tuned Models: Random Forest and Gradient Boosting optimized for recall on unvaccinated individuals (e.g., 0.96 for H1N1 unvaccinated in Random Forest).
-
-Metrics: Focus on recall for class 0 (unvaccinated) and F1-score, with custom scorer in GridSearchCV.
 
 # DEPLOYMENT
 
