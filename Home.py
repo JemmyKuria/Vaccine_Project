@@ -138,6 +138,11 @@ with st.container():
         <p>This application helps public health officials and vaccine campaign managers optimize their outreach efforts through advanced data analysis and machine learning.</p>
     </div>
     """, unsafe_allow_html=True)
+    st.markdown("""
+    <div class="about-content">
+        <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates while reducing campaign costs.</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     # Create two columns for the features and benefits
     col1, col2 = st.columns(2, gap="large")
@@ -168,11 +173,7 @@ with st.container():
         </div>
         """, unsafe_allow_html=True)
     
-    st.markdown("""
-    <div class="about-content">
-        <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates while reducing campaign costs.</p>
-    </div>
-    """, unsafe_allow_html=True)
+    
 
 # =========================
 # How It Works Section
