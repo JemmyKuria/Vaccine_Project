@@ -127,38 +127,36 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =========================
-# About Section - Fixed Version
+# About Section - Corrected Version
 # =========================
-with st.container():
-    st.markdown("""
-    <div class="card">
-        <h2 class="section-title">About This Tool</h2>
-        <div class="about-content">
-            <p>This application helps public health officials and vaccine campaign managers optimize their outreach efforts through advanced data analysis and machine learning.</p>
-            
-            <div class="highlight-box">
-                <h4>Key Features:</h4>
-                <ul>
-                    <li><strong>Predict vaccination likelihood</strong> for different demographic groups</li>
-                    <li><strong>Identify key factors</strong> influencing vaccine acceptance</li>
-                    <li><strong>Generate targeted outreach</strong> recommendations</li>
-                    <li><strong>Visualize campaign performance</strong> metrics</li>
-                </ul>
-            </div>
-            
-            <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates while reducing campaign costs.</p>
-            
-            <h4>How It Benefits You:</h4>
+st.markdown("""
+<div class="card">
+    <h2 class="section-title">About This Tool</h2>
+    <div class="about-content">
+        <p>This application helps public health officials and vaccine campaign managers optimize their outreach efforts through advanced data analysis and machine learning.</p>
+        
+        <div class="highlight-box">
+            <h4>Key Features:</h4>
             <ul>
-                <li>Increase vaccination rates by 15-30% through targeted outreach</li>
-                <li>Reduce campaign costs by focusing on high-impact groups</li>
-                <li>Make data-driven decisions with clear visualizations</li>
-                <li>Adapt strategies based on real population data</li>
+                <li><strong>Predict vaccination likelihood</strong> for different demographic groups</li>
+                <li><strong>Identify key factors</strong> influencing vaccine acceptance</li>
+                <li><strong>Generate targeted outreach</strong> recommendations</li>
+                <li><strong>Visualize campaign performance</strong> metrics</li>
             </ul>
         </div>
+        
+        <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates while reducing campaign costs.</p>
+        
+        <h4>How It Benefits You:</h4>
+        <ul>
+            <li>Increase vaccination rates by 15-30% through targeted outreach</li>
+            <li>Reduce campaign costs by focusing on high-impact groups</li>
+            <li>Make data-driven decisions with clear visualizations</li>
+            <li>Adapt strategies based on real population data</li>
+        </ul>
     </div>
-    """, unsafe_allow_html=True)
-
+</div>
+""", unsafe_allow_html=True)
 # =========================
 # How It Works Section
 # =========================
