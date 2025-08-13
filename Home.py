@@ -129,12 +129,8 @@ st.markdown("""
 # =========================
 # About Section - Corrected Version
 # =========================
-# =========================
-# About Section - Verified Working Version
-# =========================
 with st.container():
     st.markdown("""
-    <div style="background: white; padding: 20px; border-radius: 10px;">
     <div class="card">
         <h2 class="section-title">About This Tool</h2>
         <div class="about-content">
@@ -150,7 +146,7 @@ with st.container():
                 </ul>
             </div>
             
-            <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates while reducing campaign costs.</p>
+            <p>Our tool analyzes survey responses to help you focus your resources where they'll have the greatest impact, improving vaccination rates.</p>
             
             <h4>How It Benefits You:</h4>
             <ul>
@@ -161,8 +157,8 @@ with st.container():
             </ul>
         </div>
     </div>
-    </div>
     """, unsafe_allow_html=True)
+
 # =========================
 # How It Works Section
 # =========================
