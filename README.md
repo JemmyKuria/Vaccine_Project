@@ -127,7 +127,7 @@ _Error Note: Later cells incorrectly split y_train into y_train_h1n1 and y_train
 
 # DEPLOYMENT
 
-The Gradient Boosting model was deployed as an interactive web application using Streamlit, **[VaxTrend Web App](https://vaxtrend.streamlit.app/)**. The application enables public health officials and campaign managers to upload survey data, predict vaccination likelihood for H1N1 and seasonal flu vaccines, and receive tailored recommendations for targeted outreach. The deployment leverages a pre-trained Random Forest model (multi_tuned_rf.pkl) and a robust pipeline for data preprocessing and prediction.
+The tuned Random Forest model was deployed as an interactive web application using Streamlit, **[VaxTrend Web App](https://vaxtrend.streamlit.app/)**. The application enables public health officials and campaign managers to upload survey data, predict vaccination likelihood for H1N1 and seasonal flu vaccines, and receive tailored recommendations for targeted outreach. The deployment leverages a pre-trained Random Forest model (multi_tuned_rf.pkl) and a robust pipeline for data preprocessing and prediction.
 Deployment Components
 
 ### Streamlit App (Home.py):
